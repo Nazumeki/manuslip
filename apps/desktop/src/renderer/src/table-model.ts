@@ -1,14 +1,7 @@
-import type { Nodes, Root } from '@manuslip/core'
+import { type Nodes, type Root, tableEditLimits } from '@manuslip/core'
 import { utf8Bytes } from '@manuslip/core/text'
 
-export const tableEditLimits = {
-  rows: 200,
-  columns: 32,
-  cells: 2048,
-  cellUnits: 4096,
-  sourceBytes: 256 * 1024,
-  outputBytes: 512 * 1024,
-} as const
+export { tableEditLimits }
 export type TableAlignment = 'left' | 'center' | 'right' | null
 export interface TableDraft {
   rows: string[][]

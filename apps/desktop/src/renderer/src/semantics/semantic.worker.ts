@@ -63,7 +63,7 @@ self.onmessage = (event: MessageEvent<unknown>): void => {
       metadata: {
         bytes: encoded.bytes,
         cached,
-        transportInMs: arrivedAt - request.sentAt,
+        transportInMs: Math.max(0, arrivedAt - request.sentAt),
         serializeMs: encoded.serializeMs,
       },
       sentAt: absoluteNow(),

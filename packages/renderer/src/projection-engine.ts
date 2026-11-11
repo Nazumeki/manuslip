@@ -16,6 +16,7 @@ import {
 } from './index'
 import { projectChildren } from './projection-children'
 import { indexProjectionDefinitions } from './projection-definitions'
+import { inTableCell, scopeTableCells } from './projection-table-context'
 import { localImagePath, safeImage, safeLink } from './urls'
 
 const widgetKinds = new Set([
@@ -208,6 +209,13 @@ export function projectionOptions(options: RenderOptions, handlers: Handlers = {
       ...conventionHandlers,
       ...handlers,
       html: (state, node: Extract<Root['children'][number], { type: 'html' }>) => {
+        // A table cell uses a safe Markdown line break for Shift+Enter even
+        // when general HTML rendering is disabled.
+        if (inTableCell(state) && /^<br\s*\/?\s*>$/i.test(node.value)) {
+          const result = { type: 'element' as const, tagName: 'br', properties: {}, children: [] }
+          state.patch(node, result)
+          return result
+        }
         const result = options.rawHtml
           ? { type: 'raw' as const, value: node.value }
           : { type: 'text' as const, value: node.value }
@@ -235,6 +243,7 @@ export function projectWithHandlers(
   // The converter still owns handlers, references, footnote calls and its final footer.
   // @ts-expect-error: the public default root handler has the same special return type.
   configured.root = (state, node, parent) => {
+    scopeTableCells(state)
     if (node === bootstrap) indexProjectionDefinitions(root, state)
     // state.all covers table cells (compiled by tableRow) and footer definitions too.
     if (children) projectChildren(state, children)

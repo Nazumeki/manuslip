@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { type ElectronApplication, expect, type Locator, type Page, test } from '@playwright/test'
 import { launchDesktop } from './helpers'
+import { attachInput, observeInput } from './input-provenance'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 const original = '# Original\n\nKeep this text. '
@@ -22,8 +23,9 @@ async function withSource(
   const path = join(directory, 'mode-input.md')
   await writeFile(path, original)
   const application = await launchDesktop(join(directory, 'profile'), holdInput ? [] : [path])
+  const page = await application.firstWindow()
   try {
-    const page = await application.firstWindow()
+    await observeInput(page)
     const editor = page.getByRole('textbox', { name: 'Markdown source' })
     const errors: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
@@ -49,6 +51,7 @@ async function withSource(
     await action({ application, page, editor, path })
     expect(errors).toEqual([])
   } finally {
+    await attachInput(page, test.info())
     await application
       .evaluate(({ BrowserWindow }) => {
         for (const window of BrowserWindow.getAllWindows()) window.destroy()

@@ -1,4 +1,6 @@
+import { html } from '@codemirror/lang-html'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
+import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { semanticLimits } from '@manuslip/core'
 import { frontmatterSyntax } from './frontmatter-syntax'
@@ -7,9 +9,22 @@ import { frontmatterSyntax } from './frontmatter-syntax'
 // pathological paragraphs out of that main-thread loop. The semantic worker
 // still parses the complete original text, including inline code and links.
 export const maxEditorInlineLength = semanticLimits.editorInlineUnits
+const literalHTML = html({ matchClosingTags: false, autoCloseTags: false })
+// Fenced HTML must use the same literal input policy as Markdown HTML blocks.
+const codeLanguages = languages.map((language) =>
+  language.name === 'HTML'
+    ? LanguageDescription.of({
+        name: language.name,
+        alias: language.alias,
+        extensions: language.extensions,
+        support: literalHTML,
+      })
+    : language,
+)
 export const editorSyntax = markdown({
   base: markdownLanguage,
-  codeLanguages: languages,
+  codeLanguages,
+  htmlTagLanguage: literalHTML,
   addKeymap: false,
   completeHTMLTags: false,
   pasteURLAsLink: false,

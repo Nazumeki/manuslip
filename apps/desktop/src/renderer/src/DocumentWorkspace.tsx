@@ -527,7 +527,7 @@ export function DocumentWorkspace({
           configure={configureTranslation}
         />
       )}
-      <DocumentStatusBar status={status} />
+      <DocumentStatusBar document={document} status={status} />
     </section>
   )
 }

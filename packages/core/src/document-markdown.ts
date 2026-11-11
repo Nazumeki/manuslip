@@ -14,6 +14,7 @@ import { applyDocumentConventions, markDocumentProjections } from './document-tr
 import { remarkExtendedInline } from './extended-markdown'
 import { remarkHighlight } from './highlight'
 import { normalizeInlineFootnotes, remarkInlineFootnotes } from './inline-footnotes'
+import { remarkInlineMath } from './inline-math'
 import { remarkLatexDelimiters } from './latex-delimiters'
 import { compileMarkdownRoot } from './markdown-compile'
 import { describeMarkdownRoot } from './parse'
@@ -33,7 +34,7 @@ function createProcessor(plugins: MarkdownPlugins, yamlClose: '---' | '...', sma
     .use(remarkInlineFootnotes)
     .use(remarkDocumentHtml)
     .use(remarkDefinitionList)
-  if (plugins.latex) processor.use(remarkMath).use(remarkLatexDelimiters)
+  if (plugins.latex) processor.use(remarkMath).use(remarkInlineMath).use(remarkLatexDelimiters)
   if (plugins.opt) processor.use(remarkHighlight)
   else
     processor.use(function () {
@@ -136,7 +137,7 @@ export function parseDocumentMarkdown(
   const document = describeMarkdownRoot(
     root,
     source,
-    `document-v4/${markdownPluginNames.map((name) => Number(plugins[name])).join('')}`,
+    `document-v5/${markdownPluginNames.map((name) => Number(plugins[name])).join('')}`,
     started,
     performance.now(),
   )

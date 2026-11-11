@@ -1,0 +1,851 @@
+{
+  "baseRevision": "0e2e53e",
+  "includesUncommittedInputFixes": true,
+  "machine": {
+    "date": "2026-11-11T07:15:38.450Z",
+    "platform": "win32",
+    "release": "10.0.26300",
+    "arch": "x64",
+    "cpu": "AMD Ryzen 7 9700X 8-Core Processor             ",
+    "logicalCpus": 16,
+    "totalMemory": 33056714752,
+    "freeMemory": 14641135616,
+    "executable": "Manuslip.exe",
+    "sha256": "6df7a956e008b3d5caceb99cf906d48aadd411c716ee6c3ff5e70937d02195f2",
+    "bundleSha256": "3f30bec26b7ad6fefbf8a888f38a337b97323a8687854917b10a9b9e3408cd35",
+    "runtime": {
+      "node": "24.22.0",
+      "acorn": "8.18.0",
+      "ada": "4.0.0",
+      "amaro": "1.1.11",
+      "ares": "1.34.8",
+      "brotli": "1.2.0",
+      "cldr": "48.0",
+      "icu": "78.2",
+      "llhttp": "9.4.3",
+      "merve": "1.2.2",
+      "modules": "150",
+      "napi": "10",
+      "nbytes": "0.1.4",
+      "ncrypto": "0.0.1",
+      "nghttp2": "1.70.0",
+      "nghttp3": "",
+      "ngtcp2": "",
+      "openssl": "0.0.0",
+      "simdjson": "4.6.11",
+      "simdutf": "7.7.0",
+      "sqlite": "3.53.4",
+      "tz": "2026e",
+      "undici": "7.29.1",
+      "unicode": "17.0",
+      "uv": "1.52.1",
+      "uvwasi": "0.0.23",
+      "v8": "15.6.75.19-electron.0",
+      "zlib": "1.3.2.1-motley",
+      "zstd": "1.6.0",
+      "electron": "45.0.0",
+      "chrome": "156.0.8078.48"
+    }
+  },
+  "method": "Each file opens cold in this process, then 20 settled edits, 20 selection moves and 20 Source/Live transitions. Browser keydown to the second animation frame estimates the next painted frame; compositor presentation is not measured. The worker/cache is cold only for the first file. Freshness budgets account for complete native parsing and snapshot size: 500 ms for prose, 750 ms for dense block lists, 2500 ms for nested containers. Nested application allows one 16 ms frame; other slices stay within 4 ms. No fallback counts as a passed Live Preview latency gate.",
+  "gatePassed": true,
+  "notes": [
+    "Retains complete native parsing on cache misses; this is validation of the corrected implementation, not an incremental-parser claim.",
+    "No matched Typora performance measurement or identical pre-change packaged baseline.",
+    "An initial prose-only attempt aborted on an invalid timing sample. A prose-only retry and this complete six-case run passed strict aggregation and all gates. Raw per-case metrics are now retained before aggregation; the original invalid value was not captured."
+  ],
+  "results": [
+    {
+      "name": "prose",
+      "budget": {
+        "freshnessMs": 500,
+        "applySliceMs": 4
+      },
+      "bytes": 1049109,
+      "sha256": "ebb61cbdb48dae73da6b61b0d6574f7644f8de77cd32871ed166fadb9257457c",
+      "openMs": 69.90000000223517,
+      "initial": "ready",
+      "fallback": 0,
+      "cold": {
+        "name": "manuslip:semantic-apply",
+        "startTime": 680.1999999992549,
+        "duration": 4.400000002235174,
+        "detail": {
+          "sequence": 1,
+          "revision": 0,
+          "requestMs": 181.10009765625,
+          "parseMs": 111.59999999776483,
+          "describeMs": 28.400000002235174,
+          "renderMs": 4.400000002235174,
+          "serializeMs": 5.5,
+          "transportInMs": 19.800048828125,
+          "transportOutMs": 0.2001953125,
+          "freshnessMs": 341.9998535178602,
+          "bytes": 2701079,
+          "cached": false,
+          "slices": 3,
+          "maxSliceMs": 1,
+          "activeMs": 2.699999999254942
+        }
+      },
+      "inputPaint": {
+        "n": 20,
+        "p50": 5.099999997764826,
+        "p95": 7.100000001490116,
+        "max": 29.5
+      },
+      "modePaint": {
+        "n": 20,
+        "p50": 8.800000000745058,
+        "p95": 12.599999997764826,
+        "max": 12.799999997019768
+      },
+      "editorUpdate": {
+        "n": 119,
+        "p50": 0.09999999776482582,
+        "p95": 0.30000000074505806,
+        "max": 0.5
+      },
+      "selectionUpdate": {
+        "n": 21,
+        "p50": 0,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "request": {
+        "n": 21,
+        "p50": 1.800000000745058,
+        "p95": 2.400000002235174,
+        "max": 2.800000000745058
+      },
+      "validate": {
+        "n": 21,
+        "p50": 2,
+        "p95": 2.5,
+        "max": 3
+      },
+      "apply": {
+        "n": 21,
+        "p50": 3.100000001490116,
+        "p95": 4.800000000745058,
+        "max": 5.199999999254942
+      },
+      "applySlice": {
+        "n": 21,
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "applyActive": {
+        "n": 21,
+        "p50": 1,
+        "p95": 1.7000000029802322,
+        "max": 2.699999999254942
+      },
+      "freshness": {
+        "n": 20,
+        "p50": 292.79985351487994,
+        "p95": 307.30009765550494,
+        "max": 307.6000000014901
+      },
+      "worker": {
+        "parseMs": {
+          "n": 20,
+          "p50": 92.89999999850988,
+          "p95": 102.80000000074506,
+          "max": 105.39999999850988
+        },
+        "describeMs": {
+          "n": 20,
+          "p50": 27,
+          "p95": 29.100000001490116,
+          "max": 32.70000000298023
+        },
+        "renderMs": {
+          "n": 20,
+          "p50": 2,
+          "p95": 2.600000001490116,
+          "max": 2.899999998509884
+        },
+        "serializeMs": {
+          "n": 20,
+          "p50": 5,
+          "p95": 5.399999998509884,
+          "max": 5.400000002235174
+        },
+        "transportInMs": {
+          "n": 20,
+          "p50": 1.699951171875,
+          "p95": 2.199951171875,
+          "max": 2.599853515625
+        },
+        "transportOutMs": {
+          "n": 20,
+          "p50": 0.199951171875,
+          "p95": 0.300048828125,
+          "max": 0.300048828125
+        }
+      }
+    },
+    {
+      "name": "single-paragraph",
+      "budget": {
+        "freshnessMs": 500,
+        "applySliceMs": 4
+      },
+      "bytes": 1048628,
+      "sha256": "d42cf7c31ca6e35134bfbdfa4e271a86a281dcf15b5ffde224317abd183f8d02",
+      "openMs": 121.5,
+      "initial": "ready",
+      "fallback": 0,
+      "cold": {
+        "name": "manuslip:semantic-apply",
+        "startTime": 9956.199999999255,
+        "duration": 3.300000000745058,
+        "detail": {
+          "sequence": 22,
+          "revision": 0,
+          "requestMs": 135.699951171875,
+          "parseMs": 97.19999999925494,
+          "describeMs": 26.399999998509884,
+          "renderMs": 0.6000000014901161,
+          "serializeMs": 3.199999999254942,
+          "transportInMs": 1.199951171875,
+          "transportOutMs": 0.10009765625,
+          "freshnessMs": 293.39985351637006,
+          "bytes": 2099688,
+          "cached": false,
+          "slices": 1,
+          "maxSliceMs": 0,
+          "activeMs": 0
+        }
+      },
+      "inputPaint": {
+        "n": 20,
+        "p50": 23.300000000745058,
+        "p95": 26,
+        "max": 26.100000001490116
+      },
+      "modePaint": {
+        "n": 20,
+        "p50": 12.100000001490116,
+        "p95": 15,
+        "max": 15.699999999254942
+      },
+      "editorUpdate": {
+        "n": 117,
+        "p50": 0.10000000149011612,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000074505806
+      },
+      "selectionUpdate": {
+        "n": 21,
+        "p50": 0.10000000149011612,
+        "p95": 0.19999999925494194,
+        "max": 0.19999999925494194
+      },
+      "request": {
+        "n": 21,
+        "p50": 1.5,
+        "p95": 2.5,
+        "max": 3.599999997764826
+      },
+      "validate": {
+        "n": 21,
+        "p50": 0.8999999985098839,
+        "p95": 1.1000000014901161,
+        "max": 1.199999999254942
+      },
+      "apply": {
+        "n": 21,
+        "p50": 1.800000000745058,
+        "p95": 3.599999997764826,
+        "max": 3.600000001490116
+      },
+      "applySlice": {
+        "n": 21,
+        "p50": 0.09999999776482582,
+        "p95": 0.19999999925494194,
+        "max": 0.19999999925494194
+      },
+      "applyActive": {
+        "n": 21,
+        "p50": 0.09999999776482582,
+        "p95": 0.19999999925494194,
+        "max": 0.19999999925494194
+      },
+      "freshness": {
+        "n": 20,
+        "p50": 273.7999511733651,
+        "p95": 285.3999999985099,
+        "max": 287.8999999985099
+      },
+      "worker": {
+        "parseMs": {
+          "n": 20,
+          "p50": 84.80000000074506,
+          "p95": 88.90000000223517,
+          "max": 95.40000000223517
+        },
+        "describeMs": {
+          "n": 20,
+          "p50": 21.699999999254942,
+          "p95": 24.199999999254942,
+          "max": 26.900000002235174
+        },
+        "renderMs": {
+          "n": 20,
+          "p50": 0.20000000298023224,
+          "p95": 0.4000000022351742,
+          "max": 0.4000000022351742
+        },
+        "serializeMs": {
+          "n": 20,
+          "p50": 3.400000002235174,
+          "p95": 4.600000001490116,
+          "max": 4.699999999254942
+        },
+        "transportInMs": {
+          "n": 20,
+          "p50": 1.39990234375,
+          "p95": 2.39990234375,
+          "max": 3.5
+        },
+        "transportOutMs": {
+          "n": 20,
+          "p50": 0.199951171875,
+          "p95": 0.300048828125,
+          "max": 0.39990234375
+        }
+      }
+    },
+    {
+      "name": "mixed-rtl",
+      "budget": {
+        "freshnessMs": 500,
+        "applySliceMs": 4
+      },
+      "bytes": 1049249,
+      "sha256": "b11a161a6f53518a39602652c7b72f13e1f0b01caf5b7955a1425abf0958e43d",
+      "openMs": 50.5,
+      "initial": "ready",
+      "fallback": 0,
+      "cold": {
+        "name": "manuslip:semantic-apply",
+        "startTime": 19107.60000000149,
+        "duration": 5.099999997764826,
+        "detail": {
+          "sequence": 43,
+          "revision": 0,
+          "requestMs": 100.099853515625,
+          "parseMs": 53.69999999925494,
+          "describeMs": 23.5,
+          "renderMs": 1.699999999254942,
+          "serializeMs": 6.100000001490116,
+          "transportInMs": 3.2998046875,
+          "transportOutMs": 0.199951171875,
+          "freshnessMs": 373.8001953102648,
+          "bytes": 2521481,
+          "cached": false,
+          "slices": 2,
+          "maxSliceMs": 1,
+          "activeMs": 1.5
+        }
+      },
+      "inputPaint": {
+        "n": 20,
+        "p50": 5,
+        "p95": 6.099999997764826,
+        "max": 25.400000002235174
+      },
+      "modePaint": {
+        "n": 20,
+        "p50": 10.300000000745058,
+        "p95": 15.600000001490116,
+        "max": 17.599999997764826
+      },
+      "editorUpdate": {
+        "n": 119,
+        "p50": 0.09999999776482582,
+        "p95": 0.19999999925494194,
+        "max": 0.5
+      },
+      "selectionUpdate": {
+        "n": 21,
+        "p50": 0.09999999776482582,
+        "p95": 0.10000000149011612,
+        "max": 0.19999999925494194
+      },
+      "request": {
+        "n": 21,
+        "p50": 3.699999999254942,
+        "p95": 5.800000000745058,
+        "max": 6
+      },
+      "validate": {
+        "n": 21,
+        "p50": 3.800000000745058,
+        "p95": 4,
+        "max": 4
+      },
+      "apply": {
+        "n": 21,
+        "p50": 2.7000000029802322,
+        "p95": 5.099999997764826,
+        "max": 5.900000002235174
+      },
+      "applySlice": {
+        "n": 21,
+        "p50": 0.7000000029802322,
+        "p95": 0.9000000022351742,
+        "max": 1
+      },
+      "applyActive": {
+        "n": 21,
+        "p50": 0.7000000029802322,
+        "p95": 0.9000000022351742,
+        "max": 1.5
+      },
+      "freshness": {
+        "n": 20,
+        "p50": 254.00004882737994,
+        "p95": 263.20000000298023,
+        "max": 264.4998535178602
+      },
+      "worker": {
+        "parseMs": {
+          "n": 20,
+          "p50": 51.400000002235174,
+          "p95": 62.80000000074506,
+          "max": 65
+        },
+        "describeMs": {
+          "n": 20,
+          "p50": 22.299999997019768,
+          "p95": 22.800000000745058,
+          "max": 22.899999998509884
+        },
+        "renderMs": {
+          "n": 20,
+          "p50": 1.699999999254942,
+          "p95": 2.099999997764826,
+          "max": 2.400000002235174
+        },
+        "serializeMs": {
+          "n": 20,
+          "p50": 5.900000002235174,
+          "p95": 6.800000000745058,
+          "max": 8.699999999254942
+        },
+        "transportInMs": {
+          "n": 20,
+          "p50": 3.5,
+          "p95": 5.599853515625,
+          "max": 5.89990234375
+        },
+        "transportOutMs": {
+          "n": 20,
+          "p50": 0.199951171875,
+          "p95": 0.2001953125,
+          "max": 0.300048828125
+        }
+      }
+    },
+    {
+      "name": "repeated-paragraphs",
+      "budget": {
+        "freshnessMs": 750,
+        "applySliceMs": 4
+      },
+      "bytes": 1048671,
+      "sha256": "f5c797a04c02a948109da724ea058671593c9c8c16334dee6251e38a1ab6b944",
+      "openMs": 32.100000001490116,
+      "initial": "ready",
+      "fallback": 0,
+      "cold": {
+        "name": "manuslip:semantic-apply",
+        "startTime": 28223.10000000149,
+        "duration": 14.899999998509884,
+        "detail": {
+          "sequence": 64,
+          "revision": 0,
+          "requestMs": 324.39990234375,
+          "parseMs": 230.30000000074506,
+          "describeMs": 28,
+          "renderMs": 14.100000001490116,
+          "serializeMs": 18,
+          "transportInMs": 5.199951171875,
+          "transportOutMs": 0.2001953125,
+          "freshnessMs": 476.8999999985099,
+          "bytes": 7274119,
+          "cached": false,
+          "slices": 14,
+          "maxSliceMs": 1.1000000014901161,
+          "activeMs": 13.799999997019768
+        }
+      },
+      "inputPaint": {
+        "n": 20,
+        "p50": 8.5,
+        "p95": 12.5,
+        "max": 27.5
+      },
+      "modePaint": {
+        "n": 20,
+        "p50": 11.299999997019768,
+        "p95": 16.5,
+        "max": 17.300000000745058
+      },
+      "editorUpdate": {
+        "n": 119,
+        "p50": 0.09999999776482582,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000074505806
+      },
+      "selectionUpdate": {
+        "n": 21,
+        "p50": 0.09999999776482582,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "request": {
+        "n": 21,
+        "p50": 5.5,
+        "p95": 8.400000002235174,
+        "max": 8.800000000745058
+      },
+      "validate": {
+        "n": 21,
+        "p50": 10.300000000745058,
+        "p95": 10.899999998509884,
+        "max": 11.300000000745058
+      },
+      "apply": {
+        "n": 21,
+        "p50": 9.400000002235174,
+        "p95": 12.199999999254942,
+        "max": 14.899999998509884
+      },
+      "applySlice": {
+        "n": 21,
+        "p50": 1,
+        "p95": 2.399999998509884,
+        "max": 2.5
+      },
+      "applyActive": {
+        "n": 21,
+        "p50": 7.5,
+        "p95": 9.699999999254942,
+        "max": 13.799999997019768
+      },
+      "freshness": {
+        "n": 20,
+        "p50": 480.89985351637006,
+        "p95": 512.0001953095198,
+        "max": 515.8000976555049
+      },
+      "worker": {
+        "parseMs": {
+          "n": 20,
+          "p50": 233,
+          "p95": 258.6000000014901,
+          "max": 266.5
+        },
+        "describeMs": {
+          "n": 20,
+          "p50": 26.800000000745058,
+          "p95": 34.599999997764826,
+          "max": 35.399999998509884
+        },
+        "renderMs": {
+          "n": 20,
+          "p50": 12.699999999254942,
+          "p95": 13.899999998509884,
+          "max": 14.100000001490116
+        },
+        "serializeMs": {
+          "n": 20,
+          "p50": 17.399999998509884,
+          "p95": 19.300000000745058,
+          "max": 20.300000000745058
+        },
+        "transportInMs": {
+          "n": 20,
+          "p50": 5,
+          "p95": 7.800048828125,
+          "max": 8.2998046875
+        },
+        "transportOutMs": {
+          "n": 20,
+          "p50": 0.199951171875,
+          "p95": 0.300048828125,
+          "max": 0.300048828125
+        }
+      }
+    },
+    {
+      "name": "many-small-blocks",
+      "budget": {
+        "freshnessMs": 750,
+        "applySliceMs": 4
+      },
+      "bytes": 1048597,
+      "sha256": "5c3a1aa6c632e909b3ce1beda1a17a3e954696ee7814a5944b0a53a767ff9167",
+      "openMs": 32.5,
+      "initial": "ready",
+      "fallback": 0,
+      "cold": {
+        "name": "manuslip:semantic-apply",
+        "startTime": 42030.10000000149,
+        "duration": 20.799999997019768,
+        "detail": {
+          "sequence": 85,
+          "revision": 0,
+          "requestMs": 364.2998046875,
+          "parseMs": 259.5,
+          "describeMs": 30.900000002235174,
+          "renderMs": 14.5,
+          "serializeMs": 18.099999997764826,
+          "transportInMs": 5.099853515625,
+          "transportOutMs": 0.10009765625,
+          "freshnessMs": 516.7999999970198,
+          "bytes": 8247944,
+          "cached": false,
+          "slices": 18,
+          "maxSliceMs": 1.1000000014901161,
+          "activeMs": 17.699999999254942
+        }
+      },
+      "inputPaint": {
+        "n": 20,
+        "p50": 9.799999997019768,
+        "p95": 10.899999998509884,
+        "max": 26.300000000745058
+      },
+      "modePaint": {
+        "n": 20,
+        "p50": 12.899999998509884,
+        "p95": 16.800000000745058,
+        "max": 17.199999999254942
+      },
+      "editorUpdate": {
+        "n": 119,
+        "p50": 0.09999999776482582,
+        "p95": 0.19999999925494194,
+        "max": 0.30000000074505806
+      },
+      "selectionUpdate": {
+        "n": 21,
+        "p50": 0.09999999776482582,
+        "p95": 0.19999999925494194,
+        "max": 0.19999999925494194
+      },
+      "request": {
+        "n": 21,
+        "p50": 5.399999998509884,
+        "p95": 9.100000001490116,
+        "max": 9.5
+      },
+      "validate": {
+        "n": 21,
+        "p50": 12.099999997764826,
+        "p95": 13.200000002980232,
+        "max": 14.299999997019768
+      },
+      "apply": {
+        "n": 21,
+        "p50": 13.099999997764826,
+        "p95": 18.700000002980232,
+        "max": 20.799999997019768
+      },
+      "applySlice": {
+        "n": 21,
+        "p50": 1.699999999254942,
+        "p95": 2.5,
+        "max": 2.600000001490116
+      },
+      "applyActive": {
+        "n": 21,
+        "p50": 11.199999999254942,
+        "p95": 16.899999998509884,
+        "max": 17.699999999254942
+      },
+      "freshness": {
+        "n": 20,
+        "p50": 532.9000976532698,
+        "p95": 556.0001464821398,
+        "max": 564.5000976547599
+      },
+      "worker": {
+        "parseMs": {
+          "n": 20,
+          "p50": 269.30000000074506,
+          "p95": 286.69999999925494,
+          "max": 307.6000000014901
+        },
+        "describeMs": {
+          "n": 20,
+          "p50": 31.300000000745058,
+          "p95": 33.100000001490116,
+          "max": 35.79999999701977
+        },
+        "renderMs": {
+          "n": 20,
+          "p50": 15.199999999254942,
+          "p95": 17.399999998509884,
+          "max": 17.5
+        },
+        "serializeMs": {
+          "n": 20,
+          "p50": 19.200000002980232,
+          "p95": 20,
+          "max": 22.300000000745058
+        },
+        "transportInMs": {
+          "n": 20,
+          "p50": 5,
+          "p95": 8.60009765625,
+          "max": 9
+        },
+        "transportOutMs": {
+          "n": 20,
+          "p50": 0.199951171875,
+          "p95": 0.300048828125,
+          "max": 0.300048828125
+        }
+      }
+    },
+    {
+      "name": "nested-containers",
+      "budget": {
+        "freshnessMs": 2500,
+        "applySliceMs": 16
+      },
+      "bytes": 1048669,
+      "sha256": "93840405600f54e8014aa52af0dbb30d5e844e3fbfe9656296330807064026c3",
+      "openMs": 37.29999999701977,
+      "initial": "ready",
+      "fallback": 0,
+      "cold": {
+        "name": "manuslip:semantic-apply",
+        "startTime": 57168.800000000745,
+        "duration": 85.19999999925494,
+        "detail": {
+          "sequence": 106,
+          "revision": 0,
+          "requestMs": 1272.39990234375,
+          "parseMs": 867.1999999992549,
+          "describeMs": 49.899999998509884,
+          "renderMs": 147.80000000074506,
+          "serializeMs": 65.10000000149012,
+          "transportInMs": 4.89990234375,
+          "transportOutMs": 0.199951171875,
+          "freshnessMs": 1429.50004882738,
+          "bytes": 24575041,
+          "cached": false,
+          "slices": 61,
+          "maxSliceMs": 10.699999999254942,
+          "activeMs": 71.19999999925494
+        }
+      },
+      "inputPaint": {
+        "n": 20,
+        "p50": 11.200000002980232,
+        "p95": 12.300000000745058,
+        "max": 30.100000001490116
+      },
+      "modePaint": {
+        "n": 20,
+        "p50": 16.5,
+        "p95": 23.300000000745058,
+        "max": 24.300000000745058
+      },
+      "editorUpdate": {
+        "n": 120,
+        "p50": 0.09999999776482582,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000074505806
+      },
+      "selectionUpdate": {
+        "n": 21,
+        "p50": 0,
+        "p95": 0.10000000149011612,
+        "max": 0.19999999925494194
+      },
+      "request": {
+        "n": 21,
+        "p50": 5.100000001490116,
+        "p95": 5.5,
+        "max": 5.600000001490116
+      },
+      "validate": {
+        "n": 21,
+        "p50": 44.400000002235174,
+        "p95": 51.400000002235174,
+        "max": 62.100000001490116
+      },
+      "apply": {
+        "n": 21,
+        "p50": 51,
+        "p95": 55.19999999925494,
+        "max": 85.19999999925494
+      },
+      "applySlice": {
+        "n": 21,
+        "p50": 3.599999997764826,
+        "p95": 4.600000001490116,
+        "max": 10.699999999254942
+      },
+      "applyActive": {
+        "n": 21,
+        "p50": 43.099999997764826,
+        "p95": 46.99999999627471,
+        "max": 71.19999999925494
+      },
+      "freshness": {
+        "n": 20,
+        "p50": 1391.2000976577401,
+        "p95": 1428.2998046875,
+        "max": 1447.3998046889901
+      },
+      "worker": {
+        "parseMs": {
+          "n": 20,
+          "p50": 854.3999999985099,
+          "p95": 899.3000000007451,
+          "max": 915.6000000014901
+        },
+        "describeMs": {
+          "n": 20,
+          "p50": 50.899999998509884,
+          "p95": 62.399999998509884,
+          "max": 64.89999999850988
+        },
+        "renderMs": {
+          "n": 20,
+          "p50": 147.30000000074506,
+          "p95": 153.10000000149012,
+          "max": 171.30000000074506
+        },
+        "serializeMs": {
+          "n": 20,
+          "p50": 68.60000000149012,
+          "p95": 74.10000000149012,
+          "max": 75.10000000149012
+        },
+        "transportInMs": {
+          "n": 20,
+          "p50": 4.89990234375,
+          "p95": 5.199951171875,
+          "max": 5.300048828125
+        },
+        "transportOutMs": {
+          "n": 20,
+          "p50": 0.199951171875,
+          "p95": 0.300048828125,
+          "max": 1.5
+        }
+      }
+    }
+  ]
+}

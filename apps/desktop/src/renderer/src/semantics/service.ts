@@ -65,7 +65,12 @@ interface Running {
   request: ParseRequest
 }
 export interface SemanticConnection {
-  request(revision: number, source: () => string, options: RenderOptions): void
+  request(
+    revision: number,
+    source: () => string,
+    options: RenderOptions,
+    completion?: boolean,
+  ): void
   retry(): void
   warm(): void
   dispose(): void
@@ -93,7 +98,7 @@ export class SemanticService {
     const owner: Consumer = { id, generation: ++this.generation, revision: -1, intent: 0, notify }
     this.active = owner
     return {
-      request: (revision, source, options) => {
+      request: (revision, source, options, completion = false) => {
         if (this.disposed || this.active !== owner) return
         owner.revision = revision
         const pending: Pending = {
@@ -113,7 +118,7 @@ export class SemanticService {
         this.pending = pending
         notify({ kind: 'pending' })
         if (this.idle) clearTimeout(this.idle)
-        this.idle = setTimeout(() => this.publish(), semanticLimits.debounce)
+        this.idle = setTimeout(() => this.publish(), completion ? 16 : semanticLimits.debounce)
         this.maximum ??= setTimeout(() => this.publish(), semanticLimits.maxDelay)
       },
       retry: () => {
@@ -246,7 +251,7 @@ export class SemanticService {
             certificate: response.certificate,
             requestSentAt: request.sentAt,
             freshnessMs: absoluteNow() - running.pending.editedAt,
-            transportOutMs: absoluteNow() - response.sentAt,
+            transportOutMs: Math.max(0, absoluteNow() - response.sentAt),
             applyStarted: performance.now(),
           })
       }
@@ -285,7 +290,7 @@ export class SemanticService {
             snapshot: response.snapshot,
             requestSentAt: running.request.sentAt,
             freshnessMs: absoluteNow() - running.pending.editedAt,
-            transportOutMs: arrivedAt - response.sentAt,
+            transportOutMs: Math.max(0, arrivedAt - response.sentAt),
             applyStarted: performance.now(),
           })
       }

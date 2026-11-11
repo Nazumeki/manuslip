@@ -1,0 +1,231 @@
+{
+  "date": "2026-11-11",
+  "commit": "0e2e53e",
+  "platform": "Windows",
+  "electron": "45.0.0",
+  "typora": "Official documentation; executable not available in checked standard installation paths. No Typora binary was run.",
+  "method": "Temporary files and isolated profiles; native key input; save and read exact UTF-8 source; DOM and range measurements for rendering.",
+  "observations": [
+    {
+      "mode": "Source",
+      "name": "enter-paragraph",
+      "before": "alpha",
+      "keys": ["Enter"],
+      "expected": "alpha\n",
+      "observed": "alpha\n",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "shift-enter-indented",
+      "before": "    alpha",
+      "keys": ["Shift+Enter"],
+      "expected": "    alpha\n    ",
+      "observed": "    alpha\n    ",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "enter-indented",
+      "before": "    alpha",
+      "keys": ["Enter"],
+      "expected": "    alpha\n",
+      "observed": "    alpha\n",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "enter-list",
+      "before": "- item",
+      "keys": ["Enter"],
+      "expected": "- item\n",
+      "observed": "- item\n",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "tab-list",
+      "before": "- item",
+      "keys": ["Tab"],
+      "expected": "- item\t",
+      "observed": "- item\t",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "ctrl-b-no-format",
+      "before": "text",
+      "keys": ["Control+a", "Control+b"],
+      "expected": "text",
+      "observed": "text",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "type-fence-enter",
+      "before": "```js",
+      "keys": ["Enter"],
+      "expected": "```js\n",
+      "observed": "```js\n",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "enter-paragraph",
+      "before": "alpha",
+      "keys": ["Enter"],
+      "expected": "alpha\n",
+      "observed": "alpha\n",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "shift-enter-indented",
+      "before": "    alpha",
+      "keys": ["Shift+Enter"],
+      "expected": "    alpha\n    ",
+      "observed": "    alpha\n    ",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "enter-indented",
+      "before": "    alpha",
+      "keys": ["Enter"],
+      "expected": "    alpha\n",
+      "observed": "    alpha\n",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "enter-list",
+      "before": "- item",
+      "keys": ["Enter"],
+      "expected": "- item\n",
+      "observed": "- item\n",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "tab-list",
+      "before": "- item",
+      "keys": ["Tab"],
+      "expected": "- item\t",
+      "observed": "- item\t",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "ctrl-b-no-format",
+      "before": "text",
+      "keys": ["Control+a", "Control+b"],
+      "expected": "text",
+      "observed": "text",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "type-fence-enter",
+      "before": "```js",
+      "keys": ["Enter"],
+      "expected": "```js\n",
+      "observed": "```js\n",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "table-last-tab-exits-no-row",
+      "before": "| A | B |\n| --- | --- |\n| x | y |\n\nEnd",
+      "keys": ["click final body cell", "Tab"],
+      "expected": "| A | B |\n| --- | --- |\n| x | y |\n\nEnd",
+      "observed": "| A | B |\n| --- | --- |\n| x | y |\n\nEnd",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "cell-newline-flatten-and-pipe-escape",
+      "before": "| A | B |\n| --- | --- |\n| x | y |\n\nEnd",
+      "keys": ["replace first body cell with one\\ntwo | three", "Escape"],
+      "expected": "| A | B |\n| --- | --- |\n| one two \\| three | y |\n\nEnd",
+      "observed": "| A | B |\n| --- | --- |\n| one two \\| three | y |\n\nEnd",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "projection-collapses-repeated-spaces",
+      "observed": {
+        "editable": {
+          "width": 18.640625,
+          "whiteSpace": "break-spaces"
+        },
+        "projected": {
+          "width": 4.671875,
+          "whiteSpace": "normal"
+        }
+      },
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "math-delimiter-cases",
+      "observed": [
+        {
+          "syntax": "$ x $",
+          "renderedMath": 1
+        },
+        {
+          "syntax": "$x$2",
+          "renderedMath": 1
+        },
+        {
+          "syntax": "$2 and $3",
+          "renderedMath": 1
+        },
+        {
+          "syntax": "$x$",
+          "renderedMath": 1
+        },
+        {
+          "syntax": "\\(x\\)",
+          "renderedMath": 1
+        }
+      ]
+    },
+    {
+      "mode": "Source",
+      "name": "ctrl-shift-k-deletes-line",
+      "before": "alpha\nbeta",
+      "keys": ["Control+Home", "Control+Shift+k"],
+      "expected": "beta",
+      "observed": "beta",
+      "matched": true
+    },
+    {
+      "mode": "Source",
+      "name": "ctrl-slash-comments",
+      "before": "alpha",
+      "keys": ["Control+/"],
+      "expected": "<!-- alpha -->",
+      "observed": "<!-- alpha -->",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "ctrl-shift-k-deletes-line",
+      "before": "alpha\nbeta",
+      "keys": ["Control+Home", "Control+Shift+k"],
+      "expected": "beta",
+      "observed": "beta",
+      "matched": true
+    },
+    {
+      "mode": "Live Preview",
+      "name": "ctrl-slash-comments",
+      "before": "alpha",
+      "keys": ["Control+/"],
+      "expected": "<!-- alpha -->",
+      "observed": "<!-- alpha -->",
+      "matched": true
+    }
+  ]
+}

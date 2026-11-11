@@ -140,6 +140,8 @@ test('1 MiB corpus input, callbacks, freshness and mode changes', async () => {
         expect(await readFile(path, 'utf8')).toBe(`${source}${appended}`)
       }
       const metrics = await measures(page)
+      // Retain raw evidence even if strict aggregation rejects a timing sample.
+      await report(test.info(), `${entry.name}-metrics`, { metrics })
       const phase = (name: string) =>
         metrics
           .filter((metric) => metric.name === `manuslip:${name}`)

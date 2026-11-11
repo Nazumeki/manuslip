@@ -22,6 +22,23 @@ including native integration and parser patch equivalence, without requiring Pan
 
 ## Focused runs and fixtures
 
+The [Typora rendering and input comparison](typora-rendering-input.md) records granular
+behavior differences, source evidence, exploratory observations and remaining comparison
+traces. Its [fixture](../../test/e2e/fixtures/markdown/typora-comparison.md) keeps the same
+syntax inputs available for manual checks in both applications.
+
+The [input-lifecycle follow-up](typora-input-lifecycle.md) records native event ordering,
+input information, focus/admission, linked extension updates and development-build timing.
+Its retained probe harness contains expectations from before the corrections in
+[input lifecycle fixes](typora-input-fixes.md). Use
+`npm run test:e2e -- test/e2e/input-lifecycle-regressions.spec.ts` after `npm run build:app`
+to check the current contracts. Exploratory timings do not replace the packaged gates.
+
+The [input reference alignment](input-reference-alignment.md) records the Zed punctuation
+contract, the local Typora implementation references, fixes and native timing evidence.
+Run `npm run test:e2e -- test/e2e/input-reference-alignment.spec.ts` after rebuilding
+to verify pairing, block completion, composition and table behavior against saved source.
+
 ```sh
 npm test -- --project core
 npx vitest run packages/editor/test/unit/replace.test.ts

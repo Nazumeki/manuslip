@@ -15,6 +15,7 @@ import {
 import { proseNavigation, revealProse } from './live-navigation'
 import { hasEditingPreview, previewIsDocked } from './live-preview-layout'
 import {
+  blockAtPreview,
   cancelPreviewPointer,
   capturePreviewPointer,
   completesPreviewPointer,
@@ -225,7 +226,11 @@ export class RenderedWidget extends WidgetType {
             anchor.hasAttribute('data-footnote-backref'))
         ) {
           event.preventDefault()
-          openLink(anchor.getAttribute('href') || '')
+          const block = blockAtPreview(view, container)
+          const links = [...content.querySelectorAll('a[href]')]
+          const index = links.indexOf(anchor)
+          if (block && index >= 0)
+            openLink(anchor.getAttribute('href') || '', { block, index, count: links.length })
         } else if (
           event instanceof MouseEvent &&
           event.button === 0 &&
@@ -355,7 +360,12 @@ function active(state: EditorState, all: DecorationSet): Set<string> {
     all.between(selection.from, selection.to, (start, end, decoration) => {
       if (
         !decoration.spec.virtual &&
-        !(editing?.block.kind === 'table' && start === editing.from && end === editing.to) &&
+        !(
+          editing?.block.kind === 'table' &&
+          !editing.source &&
+          start === editing.from &&
+          end === editing.to
+        ) &&
         rangeTouches(selection, start, end)
       )
         selected.add(decoration.spec.occurrence as string)
@@ -420,7 +430,7 @@ function build(state: EditorState, options: LiveOptions): BlockState {
       editing &&
       ((block.from === editing.block.from && block.kind === editing.block.kind) ||
         (proseProjection(block.kind) && editing.from >= block.from && editing.to <= block.to)) &&
-      block.kind !== 'table'
+      (block.kind !== 'table' || editing.source)
     ) {
       renderedEnd = source.to
       continue

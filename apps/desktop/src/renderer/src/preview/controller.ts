@@ -12,8 +12,10 @@ import {
   type EditorView,
   type Extension,
   isComposing,
+  type LiveLink,
   type LiveModel,
   type LiveOptions,
+  latexMarkdown,
   liveModel,
   livePreview,
   navigateLiveAnchor,
@@ -154,36 +156,8 @@ export class DocumentPreview {
         })
       }
     },
-    openLink: (url: string): void => {
-      if (url.startsWith('#')) {
-        const literal = url.slice(1)
-        let decoded: string
-        try {
-          decoded = decodeURIComponent(literal)
-        } catch {
-          return
-        }
-        const anchors = this.settled?.model.anchors
-        const anchor =
-          anchors?.find((anchor) => anchor.id === literal) ??
-          anchors?.find((anchor) => {
-            const id = anchor.id.startsWith('user-content-')
-              ? anchor.id
-              : `user-content-${anchor.id}`
-            return id === literal || id === decoded || anchor.id === decoded
-          })
-        if (anchor) {
-          const view = this.document.view()
-          if (anchor.rendered && view) {
-            navigateLiveAnchor(view, anchor)
-            return
-          }
-          this.document.dispatch({ selection: { anchor: anchor.from }, scrollIntoView: true })
-          this.document.view()?.focus()
-        }
-        return
-      }
-      this.document.openLink(url)
+    openLink: (url: string, link?: LiveLink): void => {
+      void this.openLink(url, link)
     },
   }
   private connection: SemanticConnection | null = null
@@ -194,7 +168,11 @@ export class DocumentPreview {
   private disposed = false
   private mounted = false
   private viewing = false
-  private navigation = false
+  private navigationPinned = false
+  private navigationReaders = 0
+  private get navigation(): boolean {
+    return this.navigationPinned || this.navigationReaders > 0
+  }
   private applying: SlicedWork<PreparedPreview> | null = null
   private packedApplying: SlicedWork<OwnedPackedPreview> | null = null
   private readonly packedOwner = new PackedSession({
@@ -228,7 +206,11 @@ export class DocumentPreview {
       liveModel,
       isComposing,
       this.mode.of([]),
-      this.metadata.of([yamlFrontmatter.of(this.plugins.typora), optMarkdown.of(this.plugins.opt)]),
+      this.metadata.of([
+        yamlFrontmatter.of(this.plugins.typora),
+        optMarkdown.of(this.plugins.opt),
+        latexMarkdown.of(this.plugins.latex),
+      ]),
     ]
   }
 
@@ -297,7 +279,27 @@ export class DocumentPreview {
   }
 
   setNavigation(enabled: boolean): void {
-    this.navigation = enabled
+    this.navigationPinned = enabled
+    this.navigationChanged()
+  }
+
+  /** Visible metadata consumers own independent leases, so closing one panel
+   * cannot detach another panel's outline/count subscription.
+   */
+  observeNavigation(): () => void {
+    this.navigationReaders++
+    this.navigationChanged()
+    let observing = true
+    return () => {
+      if (!observing) return
+      observing = false
+      this.navigationReaders--
+      this.navigationChanged()
+    }
+  }
+
+  private navigationChanged(): void {
+    const enabled = this.navigation
     if (!this.viewing || this.disposed) return
     if (enabled && this.document.bytes() > semanticLimits.previewBytes) {
       this.document.status({ semantic: 'limit', semanticError: 'semantic-limit' })
@@ -325,7 +327,7 @@ export class DocumentPreview {
       footnoteBackLabel: i18next.t('backToFootnote'),
     }
   }
-  private request(): void {
+  private request(completion = false): void {
     if (!this.connection || this.disposed) return
     const state = this.document.state()
     this.document.status({ semantic: 'pending', semanticError: null })
@@ -333,6 +335,7 @@ export class DocumentPreview {
       this.document.revision(),
       () => state.doc.toString(),
       this.renderOptions(),
+      completion,
     )
   }
 
@@ -356,7 +359,26 @@ export class DocumentPreview {
           if (this.currentMode === 'live') this.setMode('source')
           this.document.status({ semantic: 'limit', semanticError: 'semantic-limit' })
         })
-      } else this.request()
+      } else {
+        let completion = false
+        if (
+          this.currentMode === 'live' &&
+          this.document.state().doc.length <= 64 * 1024 &&
+          !this.document.view()?.compositionStarted &&
+          !this.document.state().field(isComposing, false)
+        )
+          for (const transaction of transactions)
+            if (transaction.isUserEvent('input') && !transaction.isUserEvent('input.paste'))
+              transaction.changes.iterChanges((_from, _to, _nextFrom, _nextTo, inserted) => {
+                if (
+                  inserted.length > 0 &&
+                  inserted.length <= 4 &&
+                  /[\]$:^~=)*`}>\n]/.test(inserted.toString())
+                )
+                  completion = true
+              })
+        this.request(completion)
+      }
     }
   }
 
@@ -395,6 +417,7 @@ export class DocumentPreview {
         this.metadata.reconfigure([
           yamlFrontmatter.of(this.plugins.typora),
           optMarkdown.of(this.plugins.opt),
+          latexMarkdown.of(this.plugins.latex),
         ]),
       ],
     })
@@ -782,6 +805,66 @@ export class DocumentPreview {
 
   currentSnapshot(): PreviewSnapshot | null {
     return this.settled?.revision === this.document.revision() ? this.settled.snapshot : null
+  }
+  /** A retained widget may still display a reference from an older revision.
+   * Wait off the input path and resolve its destination against current output.
+   * If its owner or link structure changed, discard the obsolete activation.
+   */
+  async openLink(url: string, link?: LiveLink): Promise<void> {
+    const started = performance.now()
+    try {
+      await this.document.synchronizeInput?.()
+      const revision = this.document.revision()
+      await this.capture(revision, new AbortController().signal)
+      if (this.disposed || revision !== this.document.revision()) return
+      const model = this.settled?.model
+      if (!model) return
+      if (link) {
+        const block = model.blocks.find((block) => block.id === link.block.id)
+        if (!block) return
+        const before = document.createElement('template')
+        const after = document.createElement('template')
+        before.innerHTML = link.block.html
+        after.innerHTML = block.html
+        const previous = [...before.content.querySelectorAll('a[href]')]
+        const current = [...after.content.querySelectorAll('a[href]')]
+        if (previous.length !== link.count || current.length !== link.count) return
+        const target = current[link.index]?.getAttribute('href')
+        if (target === undefined || target === null) return
+        for (const anchor of [...previous, ...current]) anchor.setAttribute('href', '')
+        if (before.innerHTML !== after.innerHTML) return
+        url = target
+      }
+      if (!url.startsWith('#')) {
+        this.document.openLink(url)
+        return
+      }
+      const literal = url.slice(1)
+      let decoded: string
+      try {
+        decoded = decodeURIComponent(literal)
+      } catch {
+        return
+      }
+      const anchors = model.anchors
+      const anchor =
+        anchors?.find((anchor) => anchor.id === literal) ??
+        anchors?.find((anchor) => {
+          const id = anchor.id.startsWith('user-content-') ? anchor.id : `user-content-${anchor.id}`
+          return id === literal || id === decoded || anchor.id === decoded
+        })
+      if (!anchor) return
+      const view = this.document.view()
+      if (anchor.rendered && view) navigateLiveAnchor(view, anchor)
+      else {
+        this.document.dispatch({ selection: { anchor: anchor.from }, scrollIntoView: true })
+        view?.focus()
+      }
+    } catch {
+      // A newer edit, tab suspension, disposal or failed parse cancels this activation.
+    } finally {
+      semanticMetric('linked-input', started)
+    }
   }
   async captureReading(revision: number, signal: AbortSignal): Promise<ReadingCapture> {
     const plugins = this.plugins

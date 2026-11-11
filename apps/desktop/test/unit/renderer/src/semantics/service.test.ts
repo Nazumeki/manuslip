@@ -29,7 +29,7 @@ class FakeWorker implements WorkerPort {
   terminate(): void {
     this.terminated = true
   }
-  finish(index = 0): void {
+  finish(index = 0, clockOffset = 0): void {
     const request = this.messages[index]
     if (!request) throw new Error('No running request')
     const document = parseMarkdown(request.source)
@@ -40,7 +40,7 @@ class FakeWorker implements WorkerPort {
       generation: request.generation,
       documentId: request.documentId,
       revision: request.revision,
-      sentAt: performance.timeOrigin + performance.now(),
+      sentAt: performance.timeOrigin + performance.now() + clockOffset,
       snapshot: {
         document,
         projection,
@@ -56,6 +56,47 @@ afterEach(() => {
   vi.useRealTimers()
 })
 describe('window semantic scheduling', () => {
+  it('reports a nonnegative transport delay when worker clocks round ahead', async () => {
+    vi.useFakeTimers()
+    const worker = new FakeWorker(),
+      events: SemanticEvent[] = []
+    const service = new SemanticService(() => worker)
+    const connection = service.connect('rounded-clock', (event) => events.push(event))
+    try {
+      connection.request(1, () => 'source', options)
+      await vi.advanceTimersByTimeAsync(semanticLimits.debounce)
+      worker.finish(0, 0.125)
+      expect(events.at(-1)).toMatchObject({ kind: 'snapshot', transportOutMs: 0 })
+    } finally {
+      service.dispose()
+    }
+  })
+  it('coalesces completion input within a frame while keeping ordinary input debounced', async () => {
+    vi.useFakeTimers()
+    const worker = new FakeWorker()
+    const service = new SemanticService(() => worker)
+    const connection = service.connect('completion', () => {})
+    try {
+      connection.request(1, () => 'ordinary', options)
+      await vi.advanceTimersByTimeAsync(16)
+      expect(worker.messages).toHaveLength(0)
+      connection.request(2, () => '$x$', options, true)
+      await vi.advanceTimersByTimeAsync(8)
+      connection.request(3, () => '$y$', options, true)
+      await vi.advanceTimersByTimeAsync(15)
+      expect(worker.messages).toHaveLength(0)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(worker.messages.map((message) => message.revision)).toEqual([3])
+      connection.request(4, () => '**done**', options, true)
+      await vi.advanceTimersByTimeAsync(16)
+      expect(worker.messages).toHaveLength(1)
+      worker.finish()
+      expect(worker.messages.map((message) => message.revision)).toEqual([3, 4])
+    } finally {
+      service.dispose()
+    }
+  })
+
   it('carries the original request clock through a delayed native response', async () => {
     vi.useFakeTimers()
     const worker = new FakeWorker(),

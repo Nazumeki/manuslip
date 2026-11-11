@@ -50,7 +50,7 @@ export function producerSourceSteps(input: unknown, exchange: unknown): Producer
   if (checked.value.sequence !== request.sequence)
     throw new Error('Packed producer sequence mismatch')
   const scan = packedSourceSteps(identity, request.source, jsonByteLimit)
-  const transportInMs = absoluteNow() - request.sentAt
+  const transportInMs = Math.max(0, absoluteNow() - request.sentAt)
   const work = new PackedWork(
     (function* () {
       const source = yield* scan

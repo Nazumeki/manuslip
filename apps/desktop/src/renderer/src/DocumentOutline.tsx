@@ -62,20 +62,23 @@ export function DocumentOutline({
   document,
   busy,
   panel = false,
+  active = true,
 }: {
   document: DocumentController
   busy: boolean
   panel?: boolean
+  active?: boolean
 }): React.JSX.Element {
   const status = useDocumentStatus(document)
   const outline = document.store.getState().outline
   const [expanded, setExpanded] = useState(false)
   const [visible, setVisible] = useState(200)
   const t = i18next.t.bind(i18next)
+  const observing = active && (panel || expanded)
   useEffect(() => {
-    document.preview.setNavigation(true)
-    return () => document.preview.setNavigation(false)
-  }, [document])
+    if (!observing) return
+    return document.preview.observeNavigation()
+  }, [document, observing])
   const current = status.semanticRevision === status.revision && status.semantic === 'ready'
   return (
     <details

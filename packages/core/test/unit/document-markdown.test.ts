@@ -4,6 +4,34 @@ import { parseDocumentMarkdown } from '../../src/document-markdown'
 import { plainText } from '../../src/semantic-description'
 
 describe('document conventions', () => {
+  it.each(['$ x$', '$x $', '$x$1', '$x\\$', '$\tx$'])(
+    'keeps invalid Typora single-dollar boundaries literal: %j',
+    (source) =>
+      expect(
+        parseDocumentMarkdown(source).blocks.some((block) => block.kind === 'inlineMath'),
+      ).toBe(false),
+  )
+  it.each(['$x$', '$a\\$b$', '$x + y$', '$x\ny$', '$\\frac{1}{2}$'])(
+    'preserves complete Typora inline math and its source range: %j',
+    (source) => {
+      const document = parseDocumentMarkdown(source)
+      expect(document.blocks.find((block) => block.kind === 'inlineMath')).toMatchObject({
+        from: 0,
+        to: source.length,
+      })
+    },
+  )
+  it.each(['H~long\\ text~', 'x^long\\ text^'])(
+    'renders escaped script spaces without changing source positions: %j',
+    (source) => {
+      const document = parseDocumentMarkdown(source)
+      expect(plainText(document.root)).toBe(`${source[0]}long text`)
+      expect(
+        document.blocks.some((block) => block.kind === 'subscript' || block.kind === 'superscript'),
+      ).toBe(true)
+      expect(document.counts.characters).toBe([...source].length)
+    },
+  )
   it('enables the requested plugins by default', () => {
     expect(defaultMarkdownPlugins).toEqual({
       opt: true,

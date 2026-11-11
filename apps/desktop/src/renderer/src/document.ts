@@ -10,12 +10,14 @@ import {
   limitRejected,
   mountSourceEditor,
   openSearchPanel,
+  punctuationAction,
   redo,
   SourceInputSynchronization,
   StateEffect,
   selectAll,
   sourceDisplay,
   Text,
+  type Transaction,
   type TransactionSpec,
   undo,
   type ViewUpdate,
@@ -490,6 +492,8 @@ export class DocumentController {
     if (this.disposed) return
     if (this.view) this.view.dispatch(spec)
     else {
+      const started = performance.now()
+      const revision = this.store.getState().revision
       const transaction = this.state.update(spec)
       this.paste?.map([transaction])
       this.replacements.changed([transaction])
@@ -499,6 +503,7 @@ export class DocumentController {
         transaction.docChanged ? 1 : 0,
         transaction.effects.some((effect) => effect.is(limitRejected)),
       )
+      this.recordInput([transaction], started, revision)
       this.table.changed()
       this.preview.changed([transaction])
       this.reading?.changed([transaction])
@@ -535,6 +540,7 @@ export class DocumentController {
 
   private updated(update: ViewUpdate): void {
     const started = performance.now()
+    const revision = this.store.getState().revision
     this.paste?.map(update.transactions)
     this.replacements.changed(update.transactions)
     this.accept(
@@ -544,6 +550,7 @@ export class DocumentController {
         transaction.effects.some((effect) => effect.is(limitRejected)),
       ),
     )
+    this.recordInput(update.transactions, started, revision)
     this.table.changed()
     this.preview.changed(update.transactions)
     this.reading?.changed(update.transactions)
@@ -551,6 +558,52 @@ export class DocumentController {
       changed: update.docChanged,
       selection: update.selectionSet,
     })
+  }
+
+  /** Accepted parent transactions are the source oracle, including forwarded cell
+   * edits. DOM beforeinput/input events describe intent, not accepted content.
+   * Record only scalar metadata; source text never enters the performance buffer.
+   */
+  private recordInput(
+    transactions: readonly Transaction[],
+    started: number,
+    revision: number,
+  ): void {
+    for (const transaction of transactions) {
+      const punctuation = transaction.annotation(punctuationAction)
+      if (punctuation) semanticMetric('punctuation-input', started, { ...punctuation })
+      if (!transaction.docChanged) continue
+      let inserted = 0
+      let deleted = 0
+      let ranges = 0
+      transaction.changes.iterChanges((from, to, _newFrom, _newTo, text) => {
+        inserted += text.length
+        deleted += to - from
+        ranges++
+      })
+      semanticMetric('input-accepted', started, {
+        revisionBefore: revision++,
+        revisionAfter: revision,
+        sourceUnitsBefore: transaction.startState.doc.length,
+        sourceUnitsAfter: transaction.newDoc.length,
+        anchorBefore: transaction.startState.selection.main.anchor,
+        headBefore: transaction.startState.selection.main.head,
+        anchorAfter: transaction.newSelection.main.anchor,
+        headAfter: transaction.newSelection.main.head,
+        inserted,
+        deleted,
+        ranges,
+        selections: transaction.newSelection.ranges.length,
+        input: transaction.isUserEvent('input'),
+        paste: transaction.isUserEvent('input.paste'),
+        delete: transaction.isUserEvent('delete'),
+        undo: transaction.isUserEvent('undo'),
+        redo: transaction.isUserEvent('redo'),
+        composing: this.store.getState().composing,
+        cell: !!this.view && !!activeEmbeddedEditor(this.view),
+        punctuation: !!punctuation,
+      })
+    }
   }
 
   private accept(state: EditorState, changes: number, rejected: boolean): void {

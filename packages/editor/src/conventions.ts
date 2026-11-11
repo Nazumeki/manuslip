@@ -5,3 +5,7 @@ import { defaultMarkdownPlugins } from '@manuslip/core/conventions'
 export const optMarkdown = Facet.define<boolean, boolean>({
   combine: (values) => values.at(-1) ?? defaultMarkdownPlugins.opt,
 })
+
+export const latexMarkdown = Facet.define<boolean, boolean>({
+  combine: (values) => values.at(-1) ?? defaultMarkdownPlugins.latex,
+})

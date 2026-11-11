@@ -24,6 +24,12 @@ export interface LiveAnchor {
   rendered?: boolean
   placement?: 'after-document'
 }
+/** Identity of the rendered link, retained while its semantic revision refreshes. */
+export interface LiveLink {
+  block: LiveBlock
+  index: number
+  count: number
+}
 export function inlineProjection(kind: string): boolean {
   return [
     'inlineMath',
@@ -45,7 +51,7 @@ export interface LiveOptions {
   previewLabel?(): string
   taskLabel(): string
   render(container: HTMLElement, block: LiveBlock, signal: AbortSignal, measure: () => void): void
-  openLink(url: string): void
+  openLink(url: string, link?: LiveLink): void
 }
 export const setLiveModel = StateEffect.define<LiveModel | null>()
 export const composingEffect = StateEffect.define<boolean>()

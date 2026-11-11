@@ -5,6 +5,7 @@ import type { ProjectionChildren, RenderOptions, RenderProjection } from './inde
 import { projectChildren } from './projection-children'
 import { projectionConversionSteps } from './projection-conversion-steps'
 import { projectHast, projectionOptions } from './projection-engine'
+import { scopeTableCells } from './projection-table-context'
 
 export type ProjectionDefinition = Definition | FootnoteDefinition
 
@@ -59,6 +60,7 @@ export class ProjectionSequence {
       this.#context,
       projectionOptions(this.#options, {
         root(state) {
+          scopeTableCells(state)
           captured = state
           return []
         },
@@ -173,6 +175,7 @@ export class ProjectionSequence {
         context,
         projectionOptions(this.#options, {
           root(state) {
+            scopeTableCells(state)
             if (children) projectChildren(state, children)
             state.definitionById.clear()
             state.footnoteById.clear()

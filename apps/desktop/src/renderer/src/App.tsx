@@ -565,7 +565,13 @@ export function App(): React.JSX.Element {
         </div>
         <div className="workspace-navigation">
           {activeDocument ? (
-            <DocumentOutline key={tabs.activeId} document={activeDocument} busy={fileBusy} panel />
+            <DocumentOutline
+              key={tabs.activeId}
+              document={activeDocument}
+              busy={fileBusy}
+              panel
+              active={!sidebarCollapsed}
+            />
           ) : (
             <p className="workspace-hint">{t('outlineEmpty')}</p>
           )}

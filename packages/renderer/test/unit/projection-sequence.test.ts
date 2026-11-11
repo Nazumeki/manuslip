@@ -12,6 +12,18 @@ const options: RenderOptions = {
   footnotesLabel: 'Notes 世界',
   footnoteBackLabel: 'Back 返回',
 }
+
+it.each([false, true])(
+  'preserves formatted table breaks through sequenced conversion (%s)',
+  (cooperative) => {
+    check(
+      '| A |\n| -- |\n| **a<br />b** and [x<br>y](https://example.test) |\n\n**outside<br>text**',
+      'manuslip',
+      options,
+      cooperative,
+    )
+  },
+)
 // Independent native input preparation for tests; packed context collection is separate.
 function context(root: Root): ProjectionDefinition[] {
   const definitions: ProjectionDefinition[] = []

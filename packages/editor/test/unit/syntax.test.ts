@@ -12,6 +12,30 @@ import {
 import { editorSyntax, maxEditorInlineLength } from '../../src/syntax'
 
 describe('bounded editor inline syntax', () => {
+  it.each(['---', '+++', '--- \t', '+++ \t'])(
+    'accepts a one-line metadata opener %j before Enter and after deleting its body',
+    (opening) => {
+      let state = createSourceState('', { extensions: [yamlFrontmatter.of(true)] })
+      for (const character of opening) {
+        state = state.update({ changes: { from: state.doc.length, insert: character } }).state
+        expect(state.field(frontmatterEnd)).toBe(0)
+      }
+      expect(state.doc.toString()).toBe(opening)
+      const closing = opening.trim()
+      state = state.update({
+        changes: { from: state.doc.length, insert: `\ntitle: value\n${closing}` },
+      }).state
+      expect(state.field(frontmatterEnd)).toBe(state.doc.length)
+      state = state.update({ changes: { from: opening.length, to: state.doc.length } }).state
+      expect(state.field(frontmatterEnd)).toBe(0)
+      expect(state.doc.toString()).toBe(opening)
+      expect(
+        createSourceState(opening, { extensions: [yamlFrontmatter.of(true)] }).field(
+          frontmatterEnd,
+        ),
+      ).toBe(0)
+    },
+  )
   it('keeps closed frontmatter literal and recognizes edits that close or remove it', () => {
     for (const [opening, closing] of [
       ['---', '---'],

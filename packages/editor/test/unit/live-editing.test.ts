@@ -66,6 +66,23 @@ it('keeps the source editor open when changing a diagram fence to an ordinary co
   expect(refreshed.selection.main.head).toBe(5)
 })
 
+it('preserves raw table input ownership through typing and semantic refresh', () => {
+  const original = fixture()
+  const block = { ...original.block, kind: 'table' }
+  const state = original.state.update({
+    effects: [
+      setLiveModel.of({ blocks: [block] }),
+      editLiveBlock.of({ from: 0, to: block.to, block, source: true }),
+    ],
+  }).state
+  const typed = state.update({ changes: { from: 14, insert: 'Q' } }).state
+  expect(editingBlock(typed)?.source).toBe(true)
+  const refreshed = typed.update({
+    effects: setLiveModel.of({ blocks: [{ ...block, to: block.to + 1 }] }),
+  }).state
+  expect(editingBlock(refreshed)?.source).toBe(true)
+})
+
 it('keeps inline math ownership exact when refreshed on a whitespace-padded source line', () => {
   const block: LiveBlock = {
     id: 'math',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { DocumentStatus } from './document'
+import type { DocumentController, DocumentStatus } from './document'
 import { i18next } from './i18n'
 import { ToolbarDisclosure } from './ToolbarDisclosure'
 
@@ -31,7 +31,9 @@ function LocalTime(): React.JSX.Element {
 
 export function DocumentStatusBar({
   status,
+  document,
 }: {
+  document: DocumentController
   status: Pick<
     DocumentStatus,
     | 'info'
@@ -44,6 +46,10 @@ export function DocumentStatusBar({
     | 'semanticRevision'
   >
 }): React.JSX.Element {
+  const [expanded, setExpanded] = useState(false)
+  useEffect(() => {
+    if (expanded) return document.preview.observeNavigation()
+  }, [document, expanded])
   const t = i18next.t.bind(i18next)
   const countsCurrent = status.semanticRevision === status.revision
   const words =
@@ -58,7 +64,11 @@ export function DocumentStatusBar({
         {t('cursorPosition', { line: status.line, column: status.column })}
       </span>
       <div className="document-status-summary">
-        <ToolbarDisclosure label={t('documentDetails')} summary={words ?? characters ?? undefined}>
+        <ToolbarDisclosure
+          label={t('documentDetails')}
+          summary={words ?? characters ?? undefined}
+          onOpenChange={setExpanded}
+        >
           <div className="document-details">
             {(words || characters) && (
               <dl className="document-statistics">

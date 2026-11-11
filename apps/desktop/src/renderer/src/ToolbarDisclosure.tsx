@@ -8,6 +8,7 @@ export function ToolbarDisclosure({
   icon,
   iconOnly = false,
   summary,
+  onOpenChange,
 }: {
   label: string
   children: ReactNode
@@ -15,6 +16,7 @@ export function ToolbarDisclosure({
   icon?: IconName
   iconOnly?: boolean
   summary?: string
+  onOpenChange?: (open: boolean) => void
 }): React.JSX.Element {
   const id = useId()
   const [open, setOpen] = useState(false)
@@ -39,7 +41,11 @@ export function ToolbarDisclosure({
         popover="auto"
         inert={!open}
         aria-label={label}
-        onBeforeToggle={(event) => setOpen(event.newState === 'open')}
+        onBeforeToggle={(event) => {
+          const open = event.newState === 'open'
+          setOpen(open)
+          onOpenChange?.(open)
+        }}
         onClickCapture={(event) => {
           if (event.target instanceof Element && event.target.closest('button'))
             event.currentTarget.hidePopover()

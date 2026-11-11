@@ -5,6 +5,7 @@ import {
   insertNewline,
   insertTab,
 } from '@codemirror/commands'
+import { insertNewlineContinueMarkup } from '@codemirror/lang-markdown'
 import { bracketMatching, ensureSyntaxTree, syntaxHighlighting } from '@codemirror/language'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
 import { EditorState, type Extension } from '@codemirror/state'
@@ -25,6 +26,7 @@ import { frontmatterEnd } from './frontmatter'
 import { sourceHighlightStyle } from './highlight'
 import { changedByteLength, documentBytes, limitRejected, maxDocumentBytes } from './limits'
 import { defaultEditorPreferences, type EditorPreferences } from './preferences'
+import { punctuationInput, punctuationNewline } from './punctuation'
 import { textSelection } from './selection'
 import { sourceSyntax } from './syntax'
 
@@ -56,12 +58,13 @@ export function selectionInCode(state: EditorState): boolean {
   })
 }
 export { highlightCode } from './code-widget'
-export { optMarkdown } from './conventions'
+export { latexMarkdown, optMarkdown } from './conventions'
 export { activeEmbeddedEditor } from './embedded-editor'
 export { yamlFrontmatter } from './frontmatter'
 export { SourceInputSynchronization } from './input-synchronization'
 export { documentBytes, limitRejected, maxDocumentBytes } from './limits'
 export * from './live'
+export { punctuationAction } from './punctuation'
 export interface SourceEditorOptions {
   extensions?: Extension[]
   display?: Extension
@@ -101,6 +104,7 @@ function sourceExtensions(options: SourceEditorOptions): Extension[] {
     highlightActiveLine(),
     highlightSelectionMatches(),
     sourceSyntax,
+    punctuationInput,
     frontmatterEnd,
     documentBytes,
     EditorState.transactionFilter.of((transaction) => {
@@ -141,7 +145,18 @@ function sourceExtensions(options: SourceEditorOptions): Extension[] {
           return true
         },
       },
-      { key: 'Enter', run: insertNewline },
+      {
+        key: 'Enter',
+        run: (view) => {
+          if (view.compositionStarted) return false
+          const transaction = punctuationNewline(view.state)
+          if (transaction) {
+            view.dispatch(transaction)
+            return true
+          }
+          return insertNewlineContinueMarkup(view) || insertNewline(view)
+        },
+      },
       { key: 'Tab', run: insertTab },
       ...defaultKeymap,
       ...searchKeymap,

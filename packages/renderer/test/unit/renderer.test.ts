@@ -5,6 +5,31 @@ import { localImagePath } from '../../src/urls'
 
 const options = { rawHtml: false, footnotesLabel: 'Footnotes', footnoteBackLabel: 'Back' }
 describe('shared rendering policy', () => {
+  it.each(['**a<br />b**', '*a<br>b*', '[a<br />b](https://example.test)', '**a*<br />*b**'])(
+    'renders a safe break inside formatted table content: %s',
+    (cell) => {
+      const source = `| Header |\n| -- |\n| ${cell} |\n\n**outside<br />text**`
+      const output = renderMarkdown(parseMarkdown(source).root, options)
+      expect(output.html.match(/<br>/g)).toHaveLength(1)
+      expect(output.html).toContain('outside&#x3C;br />text')
+    },
+  )
+
+  it('keeps attributed breaks literal even inside formatted table content', () => {
+    const source = '| Header |\n| -- |\n| **a<br onclick="alert(1)">b** |'
+    const output = renderMarkdown(parseMarkdown(source).root, options)
+    expect(output.html).not.toContain('<br')
+    expect(output.html).toContain('&#x3C;br')
+  })
+
+  it('renders table line breaks safely while keeping other HTML literal', () => {
+    const source = '| Header |\n| -- |\n| a<br />b<br>c<img src="https://example.test/x"> |'
+    const output = renderMarkdown(parseMarkdown(source).root, options)
+    expect(output.html).toContain('a<br>b<br>c')
+    expect(output.html).toContain('&#x3C;img')
+    expect(output.html).not.toContain('<img')
+    expect(renderMarkdown(parseMarkdown('a<br>b').root, options).html).toContain('&#x3C;br>')
+  })
   it('projects ordered lists with semantic numbering, both delimiters and nested contents', () => {
     const source =
       '3. first\n1. second\n9. third\n\n0) zero\n0) one\n\n- Outer\n\n  7. nested\n  1. next'

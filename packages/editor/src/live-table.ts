@@ -1,4 +1,4 @@
-import { defaultKeymap, redo, undo } from '@codemirror/commands'
+import { defaultKeymap, isolateHistory, redo, undo } from '@codemirror/commands'
 import { syntaxHighlighting } from '@codemirror/language'
 import {
   type ChangeDesc,
@@ -14,7 +14,13 @@ import { SourceInputSynchronization } from './input-synchronization'
 import { activateLiveBlock, editingBlock, editLiveBlock } from './live-editing'
 import { isComposing, type LiveBlock, type LiveOptions } from './live-model'
 import { renderedTextHit, sourcePositionAtText } from './live-position'
-import { type LiveCell, tableCellInput, tableSourceCells } from './live-table-source'
+import {
+  type LiveCell,
+  tableCellInput,
+  tableRowInsertion,
+  tableSourceCells,
+} from './live-table-source'
+import { punctuationAction, punctuationInput } from './punctuation'
 import { sourceSyntax } from './syntax'
 
 const activeTables = new WeakMap<EditorView, LiveTable>()
@@ -218,6 +224,7 @@ export class LiveTable {
         selection: { anchor: at },
         extensions: [
           sourceSyntax,
+          punctuationInput,
           syntaxHighlighting(codeHighlightStyle),
           syntaxHighlighting(cellHighlightStyle),
           drawSelection(),
@@ -233,10 +240,18 @@ export class LiveTable {
             { key: 'Mod-z', run: () => undo(this.view) },
             { key: 'Mod-Shift-z', run: () => redo(this.view) },
             { key: 'Mod-y', run: () => redo(this.view) },
-            { key: 'Tab', run: () => this.move(1) },
+            { key: 'Tab', run: () => this.move(1, true) },
             { key: 'Shift-Tab', run: () => this.move(-1) },
-            { key: 'Enter', run: () => this.move(this.cells()[0]?.length ?? 1) },
-            { key: 'Shift-Enter', run: () => this.move(-(this.cells()[0]?.length ?? 1)) },
+            { key: 'Enter', run: () => this.enter() },
+            {
+              key: 'Shift-Enter',
+              run: (view) => {
+                if (view.compositionStarted || view.state.readOnly) return false
+                view.dispatch(view.state.replaceSelection('<br />'), { userEvent: 'input.type' })
+                return true
+              },
+            },
+            { key: 'Mod-Enter', run: () => this.enter(true) },
             {
               key: 'Escape',
               run: () => {
@@ -302,6 +317,10 @@ export class LiveTable {
                     .find((tr) => tr.annotation(Transaction.userEvent))
                     ?.annotation(Transaction.userEvent) ?? 'input')
                 : 'select',
+              annotations: update.transactions.flatMap((transaction) => {
+                const action = transaction.annotation(punctuationAction)
+                return action ? [punctuationAction.of(action)] : []
+              }),
             })
             if (padding)
               this.cell = {
@@ -397,6 +416,9 @@ export class LiveTable {
     this.syncing = true
     try {
       this.editor.dispatch({
+        // This mirrors already accepted parent source, including undo restoring
+        // a legacy oversized cell. Admission/normalization applies to child input.
+        filter: false,
         ...(changed
           ? { changes: { from: 0, to: this.editor.state.doc.length, insert: text } }
           : {}),
@@ -412,14 +434,69 @@ export class LiveTable {
     }
   }
 
-  private move(delta: number): boolean {
-    if (!this.cell || this.editor?.composing) return false
+  private enter(addRow = false): boolean {
+    if (!this.editor || this.editor.compositionStarted || this.view.state.readOnly) return false
+    if (addRow) return this.insertRow(undefined, true)
+    const selected = !this.editor.state.selection.main.empty
+    if (selected)
+      this.editor.dispatch(this.editor.state.replaceSelection(''), {
+        userEvent: 'delete.selection',
+      })
+    return this.move(this.cells()[0]?.length ?? 1, false, !selected)
+  }
+
+  private move(delta: number, append = false, select = true): boolean {
+    if (!this.cell || this.editor?.compositionStarted || this.view.state.readOnly) return false
     const cells = this.cells()
     const columns = cells[0]?.length ?? 1
     const at = this.cell.row * columns + this.cell.column + delta
     const next = at < 0 ? undefined : cells[Math.floor(at / columns)]?.[at % columns]
-    if (next) this.open(next.row, next.column)
+    if (next) {
+      this.open(next.row, next.column)
+      if (select && this.editor)
+        this.editor.dispatch({ selection: { anchor: 0, head: this.editor.state.doc.length } })
+    } else if (append && delta > 0) this.insertRow(0)
     else this.finish(delta < 0)
+    return true
+  }
+
+  private insertRow(column = this.cell?.column ?? 0, removeSelection = false): boolean {
+    if (!this.cell || this.editor?.compositionStarted || this.view.state.readOnly) return false
+    const block = editingBlock(this.view.state)?.block ?? this.block
+    const change = tableRowInsertion(this.view.state, block, this.cell.row)
+    if (!change) return true
+    const table = this.content.querySelector('table')
+    if (!table) return true
+    const row = this.cell.row + 1
+    const columns = this.cells()[0]?.length ?? 0
+    const previous = this.view.state.doc
+    const selected = removeSelection ? this.editor?.state.selection.main : undefined
+    const changes =
+      selected && !selected.empty
+        ? [
+            { from: this.cell.from + selected.from, to: this.cell.from + selected.to, insert: '' },
+            change,
+          ]
+        : change
+    this.view.dispatch({
+      changes,
+      userEvent: 'input.table',
+      annotations: isolateHistory.of('full'),
+    })
+    if (this.view.state.doc === previous) return true
+    this.closeCell(true)
+    const element = table.ownerDocument.createElement('tr')
+    for (let column = 0; column < columns; column++)
+      element.append(table.ownerDocument.createElement('td'))
+    const body = table.tBodies[0] ?? table.createTBody()
+    body.insertBefore(element, table.rows[row] ?? null)
+    for (const [index, element] of [...table.rows].entries())
+      for (const [column, cell] of [...element.cells].entries()) {
+        cell.dataset.row = String(index)
+        cell.dataset.column = String(column)
+        cell.tabIndex = 0
+      }
+    this.open(row, column)
     return true
   }
 

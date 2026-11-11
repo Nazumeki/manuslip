@@ -154,7 +154,7 @@ export class PackedSemanticProducer {
     const checked = readPackedRequest(exchange, source.identity)
     if (checked.value.sequence !== request.sequence)
       throw new Error('Packed producer sequence mismatch')
-    const transportInMs = absoluteNow() - request.sentAt
+    const transportInMs = Math.max(0, absoluteNow() - request.sentAt)
     return this.#prepare(source, options, checked, transportInMs, false)
   }
   /** Only the completed private source factory authorizes this entry. Admission precedes

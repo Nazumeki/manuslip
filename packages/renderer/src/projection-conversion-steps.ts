@@ -2,8 +2,9 @@ import type { ElementContent } from 'hast'
 import type { Nodes, Parents } from 'mdast'
 import { defListHastHandlers } from 'mdast-util-definition-list'
 import { defaultHandlers, type State } from 'mdast-util-to-hast'
-import { extendedInlineHandlers } from './extended-inline'
 import { conventionHandlers } from './convention-handlers'
+import { extendedInlineHandlers } from './extended-inline'
+import { withTableCell } from './projection-table-context'
 
 type Result = ReturnType<State['one']>
 interface Children {
@@ -119,7 +120,11 @@ export function* projectionConversionSteps(
     state.one = rejectOne
     state.all = rejectAll
     try {
-      const value = invoke(node, parent)
+      const value =
+        node.type === 'html' &&
+        (parent?.type === 'tableCell' || frames.some((frame) => frame.node.type === 'tableRow'))
+          ? withTableCell(state, () => invoke(node, parent))
+          : invoke(node, parent)
       assertOpen()
       return value
     } finally {

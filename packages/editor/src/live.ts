@@ -6,11 +6,13 @@ import { blockDecorations } from './live-blocks'
 import { liveEditing } from './live-editing'
 import { frontmatterDecorations } from './live-frontmatter'
 import { inlineDecorations } from './live-inline'
+import { liveInput } from './live-input'
 import { liveInteractions } from './live-interactions'
 import type { LiveOptions } from './live-model'
 import { livePreviewPlacement } from './live-preview-layout'
 import { livePreviewScroll } from './live-preview-scroll'
 import { tableEditing } from './live-table'
+import { liveMarkdownInput } from './markdown-input'
 
 export { navigateLiveAnchor } from './live-anchors'
 export {
@@ -18,6 +20,7 @@ export {
   isComposing,
   type LiveAnchor,
   type LiveBlock,
+  type LiveLink,
   type LiveModel,
   type LiveOptions,
   liveModel,
@@ -30,6 +33,8 @@ export function livePreview(options: LiveOptions): Extension[] {
     syntaxHighlighting(codeHighlightStyle),
     frontmatterDecorations,
     liveEditing,
+    liveInput,
+    liveMarkdownInput,
     livePreviewPlacement,
     blockDecorations(options),
     inlineDecorations(options),

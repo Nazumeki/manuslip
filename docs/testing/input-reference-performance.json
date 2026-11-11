@@ -1,0 +1,433 @@
+{
+  "recordedAt": "2026-11-11T08:33:29.660Z",
+  "environment": {
+    "os": "10.0.26300",
+    "cpu": "AMD Ryzen 7 9700X 8-Core Processor             ",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) @manuslip/desktop/0.1.0 Chrome/156.0.8078.48 Electron/45.0.0 Safari/537.36",
+    "viewport": {
+      "width": 1200,
+      "height": 900
+    },
+    "build": "unpackaged production Electron bundle, isolated profile",
+    "backgroundThrottling": false
+  },
+  "method": {
+    "samplesPerCase": 6,
+    "caret": "Control+End; accepted transaction verifies source position",
+    "oracle": "native Control+S, exact bytes read from an isolated Markdown file",
+    "acceptedMs": "keydown capture to completion of input-accepted measure",
+    "semanticMs": "keydown capture to completion of semantic-apply measure",
+    "limitations": [
+      "Instrumented local development measurement on one machine.",
+      "Semantic apply is not final math SVG or compositor presentation.",
+      "No Typora or Zed runtime performance comparison.",
+      "No OS IME candidate-window measurement."
+    ]
+  },
+  "summary": [
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "count": 6,
+      "acceptedMs": {
+        "min": 1.5,
+        "median": 1.699999999254942,
+        "max": 2.5
+      },
+      "semanticMs": null
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "count": 6,
+      "acceptedMs": {
+        "min": 1.0999999977648258,
+        "median": 1.199999999254942,
+        "max": 1.6000000014901161
+      },
+      "semanticMs": {
+        "min": 19.599999997764826,
+        "median": 20.700000002980232,
+        "max": 21.899999998509884
+      }
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "count": 6,
+      "acceptedMs": {
+        "min": 1,
+        "median": 1,
+        "max": 1.2000000029802322
+      },
+      "semanticMs": {
+        "min": 19.800000000745058,
+        "median": 20.800000000745058,
+        "max": 24.699999999254942
+      }
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "count": 6,
+      "acceptedMs": {
+        "min": 1.4000000022351742,
+        "median": 1.5,
+        "max": 1.699999999254942
+      },
+      "semanticMs": {
+        "min": 20.200000002980232,
+        "median": 21,
+        "max": 38.69999999925494
+      }
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "count": 6,
+      "acceptedMs": {
+        "min": 3.399999998509884,
+        "median": 3.400000002235174,
+        "max": 4.400000002235174
+      },
+      "semanticMs": {
+        "min": 22.099999997764826,
+        "median": 23,
+        "max": 27.100000001490116
+      }
+    }
+  ],
+  "samples": [
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "sourceUnits": 6,
+      "headBefore": 6,
+      "headAfter": 7,
+      "acceptedMs": 2.5,
+      "semanticMs": null,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "sourceUnits": 6,
+      "headBefore": 6,
+      "headAfter": 7,
+      "acceptedMs": 1.699999999254942,
+      "semanticMs": null,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "sourceUnits": 6,
+      "headBefore": 6,
+      "headAfter": 7,
+      "acceptedMs": 1.5999999977648258,
+      "semanticMs": null,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "sourceUnits": 6,
+      "headBefore": 6,
+      "headAfter": 7,
+      "acceptedMs": 1.800000000745058,
+      "semanticMs": null,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "sourceUnits": 6,
+      "headBefore": 6,
+      "headAfter": 7,
+      "acceptedMs": 1.7999999970197678,
+      "semanticMs": null,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "bracket",
+      "mode": "Source",
+      "sourceUnits": 6,
+      "headBefore": 6,
+      "headAfter": 7,
+      "acceptedMs": 1.5,
+      "semanticMs": null,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "sourceUnits": 14,
+      "headBefore": 14,
+      "headAfter": 15,
+      "acceptedMs": 1.6000000014901161,
+      "semanticMs": 20.600000001490116,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "sourceUnits": 14,
+      "headBefore": 14,
+      "headAfter": 15,
+      "acceptedMs": 1.2000000029802322,
+      "semanticMs": 20.700000002980232,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "sourceUnits": 14,
+      "headBefore": 14,
+      "headAfter": 15,
+      "acceptedMs": 1.199999999254942,
+      "semanticMs": 20.800000000745058,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "sourceUnits": 14,
+      "headBefore": 14,
+      "headAfter": 15,
+      "acceptedMs": 1.199999999254942,
+      "semanticMs": 19.599999997764826,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "sourceUnits": 14,
+      "headBefore": 14,
+      "headAfter": 15,
+      "acceptedMs": 1.0999999977648258,
+      "semanticMs": 21.899999998509884,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emphasis",
+      "mode": "Live Preview",
+      "sourceUnits": 14,
+      "headBefore": 14,
+      "headAfter": 15,
+      "acceptedMs": 1.300000000745058,
+      "semanticMs": 21.600000001490116,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "sourceUnits": 11,
+      "headBefore": 11,
+      "headAfter": 12,
+      "acceptedMs": 1,
+      "semanticMs": 24.699999999254942,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "sourceUnits": 11,
+      "headBefore": 11,
+      "headAfter": 12,
+      "acceptedMs": 1,
+      "semanticMs": 21.199999999254942,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "sourceUnits": 11,
+      "headBefore": 11,
+      "headAfter": 12,
+      "acceptedMs": 1.0999999977648258,
+      "semanticMs": 20.199999999254942,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "sourceUnits": 11,
+      "headBefore": 11,
+      "headAfter": 12,
+      "acceptedMs": 1.2000000029802322,
+      "semanticMs": 20.800000000745058,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "sourceUnits": 11,
+      "headBefore": 11,
+      "headAfter": 12,
+      "acceptedMs": 1,
+      "semanticMs": 19.800000000745058,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "math",
+      "mode": "Live Preview",
+      "sourceUnits": 11,
+      "headBefore": 11,
+      "headAfter": 12,
+      "acceptedMs": 1.1000000014901161,
+      "semanticMs": 21.400000002235174,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "sourceUnits": 13,
+      "headBefore": 13,
+      "headAfter": 14,
+      "acceptedMs": 1.5,
+      "semanticMs": 38.69999999925494,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "sourceUnits": 13,
+      "headBefore": 13,
+      "headAfter": 14,
+      "acceptedMs": 1.4000000022351742,
+      "semanticMs": 20.200000002980232,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "sourceUnits": 13,
+      "headBefore": 13,
+      "headAfter": 14,
+      "acceptedMs": 1.4000000022351742,
+      "semanticMs": 21,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "sourceUnits": 13,
+      "headBefore": 13,
+      "headAfter": 14,
+      "acceptedMs": 1.5,
+      "semanticMs": 23,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "sourceUnits": 13,
+      "headBefore": 13,
+      "headAfter": 14,
+      "acceptedMs": 1.6000000014901161,
+      "semanticMs": 20.600000001490116,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "emoji",
+      "mode": "Live Preview",
+      "sourceUnits": 13,
+      "headBefore": 13,
+      "headAfter": 14,
+      "acceptedMs": 1.699999999254942,
+      "semanticMs": 21.300000000745058,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "sourceUnits": 20029,
+      "headBefore": 20029,
+      "headAfter": 20030,
+      "acceptedMs": 4.400000002235174,
+      "semanticMs": 27.100000001490116,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "sourceUnits": 20029,
+      "headBefore": 20029,
+      "headAfter": 20030,
+      "acceptedMs": 4.100000001490116,
+      "semanticMs": 25.5,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "sourceUnits": 20029,
+      "headBefore": 20029,
+      "headAfter": 20030,
+      "acceptedMs": 3.399999998509884,
+      "semanticMs": 23.899999998509884,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "sourceUnits": 20029,
+      "headBefore": 20029,
+      "headAfter": 20030,
+      "acceptedMs": 3.399999998509884,
+      "semanticMs": 22.299999997019768,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "sourceUnits": 20029,
+      "headBefore": 20029,
+      "headAfter": 20030,
+      "acceptedMs": 3.899999998509884,
+      "semanticMs": 22.099999997764826,
+      "sourceMatched": true,
+      "longtasks": []
+    },
+    {
+      "id": "long-link",
+      "mode": "Live Preview",
+      "sourceUnits": 20029,
+      "headBefore": 20029,
+      "headAfter": 20030,
+      "acceptedMs": 3.400000002235174,
+      "semanticMs": 23,
+      "sourceMatched": true,
+      "longtasks": []
+    }
+  ],
+  "errors": []
+}

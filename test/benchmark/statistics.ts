@@ -1,7 +1,7 @@
 function sortedSamples(values: readonly number[]): number[] {
   for (const [index, value] of values.entries()) {
     if (!Number.isFinite(value) || value < 0)
-      throw new RangeError(`Invalid performance sample at index ${index}`)
+      throw new RangeError(`Invalid performance sample at index ${index}: ${String(value)}`)
   }
   return [...values].sort((a, b) => a - b)
 }

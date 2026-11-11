@@ -13,11 +13,13 @@ export interface LiveEditing {
   from: number
   to: number
   block: LiveBlock
+  /** Keyboard input can reveal a table's source instead of opening a cell. */
+  source?: boolean
 }
 
 export const editLiveBlock = StateEffect.define<LiveEditing | null>()
 
-function sourceRange(state: EditorState, block: LiveBlock): { from: number; to: number } {
+export function sourceRange(state: EditorState, block: LiveBlock): { from: number; to: number } {
   if (block.placement === 'after-document')
     return { from: Math.max(0, block.from - 1), to: block.to }
   return (
@@ -44,6 +46,7 @@ export const liveEditing = StateField.define<LiveEditing | null>({
       editing =
         !replaced && from < to
           ? {
+              ...editing,
               from,
               to,
               block: {
@@ -84,7 +87,7 @@ export const liveEditing = StateField.define<LiveEditing | null>({
           )
         : undefined)
     if (block && block !== editing.block) {
-      editing = { ...sourceRange(transaction.state, block), block }
+      editing = { ...editing, ...sourceRange(transaction.state, block), block }
     }
     return editing
   },

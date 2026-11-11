@@ -1,6 +1,6 @@
 import { nameToEmoji } from 'gemoji'
 import type { Literal, Parent, PhrasingContent } from 'mdast'
-import type { Extension as FromMarkdownExtension } from 'mdast-util-from-markdown'
+import type { CompileContext, Extension as FromMarkdownExtension } from 'mdast-util-from-markdown'
 import type { Construct, Extension, Token, TokenType } from 'micromark-util-types'
 import type { Plugin } from 'unified'
 
@@ -69,7 +69,7 @@ function script(marker: number, token: TokenType, mark: TokenType, data: TokenTy
         return body(code)
       }
       function body(code: number | null) {
-        if (code === null || code < 0 || code === 32 || code === 9) return nok(code)
+        if (code === null || code < 0 || ((code === 32 || code === 9) && !escaped)) return nok(code)
         if (!escaped && code === marker) {
           if (!count) return nok(code)
           effects.exit(data)
@@ -150,15 +150,30 @@ const fromMarkdown: FromMarkdownExtension = {
   },
   exit: {
     manuslipSubscript(token) {
+      if (/\\[ \t]/.test(this.sliceSerialize(token)))
+        normalizeScriptSpaces(this.stack[this.stack.length - 1])
       this.exit(token)
     },
     manuslipSuperscript(token) {
+      if (/\\[ \t]/.test(this.sliceSerialize(token)))
+        normalizeScriptSpaces(this.stack[this.stack.length - 1])
       this.exit(token)
     },
     manuslipEmoji(token) {
       this.exit(token)
     },
   },
+}
+
+function normalizeScriptSpaces(node: CompileContext['stack'][number] | undefined): void {
+  if (!node) return
+  const pending = [node]
+  while (pending.length) {
+    const current = pending.pop()
+    if (!current) continue
+    if (current.type === 'text') current.value = current.value.replace(/\\[ \t]/g, ' ')
+    if ('children' in current) pending.push(...current.children)
+  }
 }
 
 /** Positioned parser constructs shared by native and cooperative Manuslip compilation. */

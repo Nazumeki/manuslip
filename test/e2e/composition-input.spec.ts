@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type ElectronApplication, expect, type Locator, type Page, test } from '@playwright/test'
 import { launchDesktop } from './helpers'
+import { attachInput, observeInput } from './input-provenance'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 const original = '# Original\n\nKeep this text. '
@@ -28,6 +29,7 @@ async function withComposition(
   const application = await launchDesktop(join(directory, 'profile'), [path])
   try {
     const page = await application.firstWindow()
+    await observeInput(page)
     const errors: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
     const editor = page.getByRole('textbox', { name: 'Markdown source' })
@@ -105,6 +107,7 @@ async function withComposition(
           .map(({ type, text }) => ({ type, text })),
       ).toEqual([{ type: 'compositionend', text: '世界' }])
     } finally {
+      await attachInput(page, test.info())
       const events = await page
         .evaluate(() => Reflect.get(window, '__compositionInputEvents'))
         .catch(() => null)

@@ -8,7 +8,7 @@ export const yamlFrontmatter = Facet.define<boolean, boolean>({
 
 function metadataEnd(doc: Text, yaml: boolean): number {
   const fence = doc.line(1).text.match(/^(---|\+\+\+)[\t ]*$/)?.[1]
-  if (!fence || (fence === '---' && !yaml)) return 0
+  if (!fence || (fence === '---' && !yaml) || doc.lines < 2) return 0
   let offset = doc.line(1).to + 1
   for (const line of doc.iterLines(2)) {
     const closing = line.replace(/[\t ]+$/, '')
