@@ -27,7 +27,7 @@ function measureContext(view: EditorView): number | 'dock' | undefined {
   const editing = editingBlock(view.state)
   if (
     !editing ||
-    !hasEditingPreview(editing.block) ||
+    !hasEditingPreview(editing.block, view.state) ||
     view.compositionStarted ||
     view.state.field(isComposing)
   )
@@ -211,7 +211,7 @@ export function livePreviewScroll(options: LiveOptions): Extension {
       editing &&
         range.from >= editing.from &&
         range.to <= editing.to &&
-        hasEditingPreview(editing.block) &&
+        hasEditingPreview(editing.block, view.state) &&
         options.y === 'nearest',
     )
     if (plugin.following) plugin.request(view)

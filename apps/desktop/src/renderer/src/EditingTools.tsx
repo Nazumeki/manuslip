@@ -44,7 +44,7 @@ export function EditingTools({
     {
       key: 'redo',
       icon: 'redo',
-      shortcut: `${modifier}Shift+Z`,
+      shortcut: /Mac/.test(navigator.platform) ? '⌘Shift+Z' : 'Ctrl+Y',
       run: () => void document.edit('redo'),
     },
     { key: 'cut', icon: 'cut', shortcut: `${modifier}X`, run: () => void clipboard('cut') },

@@ -32,7 +32,7 @@ function fixture(source: string) {
 }
 
 describe('CommonMark semantic blocks in Live Preview', () => {
-  it.each(examples)('$example: $section', ({ markdown }) => {
+  it.each(examples)('$example: $section', ({ markdown, example }) => {
     const { state, field, blocks } = fixture(markdown)
     const ranges: { from: number; to: number }[] = []
     for (const cursor = state.field(field).visible.iter(); cursor.value; cursor.next())
@@ -41,9 +41,25 @@ describe('CommonMark semantic blocks in Live Preview', () => {
       expect(
         ranges.some((range) => range.from <= block.from && range.to >= block.to),
         `Missing ${block.kind} projection for ${JSON.stringify(markdown.slice(block.from, block.to))}`,
-      ).toBe(true)
+        // These CommonMark examples end at EOF without a matching fence. Reading
+        // still renders them; Live Preview deliberately retains their editable source.
+      ).toBe(
+        !(
+          block.kind === 'code' &&
+          ([126, 127, 137, 139].includes(example) || (example === 237 && block.from > 6))
+        ),
+      )
     expect(state.doc.toString()).toBe(markdown)
   })
+
+  it.each(['```', '```js\nbody', '````\nbody\n```', '~~~\nbody\n```'])(
+    'keeps an unfinished fence editable: %s',
+    (source) => {
+      const { state, field } = fixture(source)
+      expect(state.field(field).visible.size).toBe(0)
+      expect(state.doc.toString()).toBe(source)
+    },
+  )
 
   it.each(['    code', '\tcode', '  ```js\n  code\n  ```', '   ~~~\n   code\n   ~~~'])(
     'reveals indentation selections and restores the complete code widget: %s',

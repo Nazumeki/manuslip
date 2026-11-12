@@ -8,7 +8,7 @@ const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 
 for (const kind of ['html', 'math', 'diagram'] as const) {
   for (const size of ['short', 'long', 'tall'] as const) {
-    test(`${kind} keeps the clicked source and preview visible with ${size} content`, async () => {
+    test(`${kind} ${kind === 'html' ? 'switches between source and output' : 'keeps the clicked source and preview visible'} with ${size} content`, async () => {
       const long = size !== 'short'
       const directory = await mkdtemp(resolve('test/e2e/result/editing-context-'))
       const profile = join(directory, 'profile'),
@@ -92,6 +92,63 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
         }
         await expect(editor).toBeFocused()
         const preview = page.locator('.cm-live-edit-preview')
+        if (kind === 'html') {
+          await expect(rendered).toHaveCount(0)
+          await expect(preview).toHaveCount(0)
+          await expect(page.locator('.cm-live-preview-panel')).toHaveCount(0)
+          await page.keyboard.insertText('Q')
+          await editor.press(`${modifier}+s`)
+          await expect.poll(() => readFile(path, 'utf8')).toBe(expected)
+          await page.setViewportSize({ width: 420, height: 500 })
+          await expect(editor).toBeFocused()
+          await expect(preview).toHaveCount(0)
+          await expect(page.locator('.cm-live-preview-panel')).toHaveCount(0)
+          await page.screenshot({ path: test.info().outputPath(`html-source-${size}.png`) })
+          if (long) {
+            await page.evaluate(axe.source)
+            expect(
+              await page.evaluate(
+                async () =>
+                  (await (window as unknown as { axe: typeof import('axe-core') }).axe.run())
+                    .violations,
+              ),
+            ).toEqual([])
+          }
+          await editor.press('Escape')
+          await expect(rendered).toBeVisible()
+          await expect(rendered).toBeFocused()
+          await expect(rendered).toBeInViewport()
+          if (size !== 'tall')
+            await expect
+              .poll(() =>
+                rendered.evaluate((element) => {
+                  const bounds = element.getBoundingClientRect()
+                  const viewport = element.closest('.cm-scroller')?.getBoundingClientRect()
+                  return (
+                    !!viewport &&
+                    bounds.top >= viewport.top + 6 &&
+                    bounds.bottom <= viewport.bottom - 6
+                  )
+                }),
+              )
+              .toBe(true)
+          await expect(rendered.locator('b')).toHaveText('SaQ&me')
+          await expect(rendered).toHaveAttribute('aria-keyshortcuts', 'Enter Space')
+          await page.screenshot({ path: test.info().outputPath(`html-output-${size}.png`) })
+          await rendered.press('Space')
+          await expect(editor).toBeFocused()
+          await expect(rendered).toHaveCount(0)
+          await expect(preview).toHaveCount(0)
+          await expect(page.locator('.cm-live-preview-panel')).toHaveCount(0)
+          await editor.press('Escape')
+          await expect(rendered).toBeFocused()
+          await rendered.locator('b').click({ modifiers: [modifier] })
+          await expect(editor).toBeFocused()
+          await expect(rendered).toHaveCount(0)
+          await expect(preview).toHaveCount(0)
+          expect(errors).toEqual([])
+          return
+        }
         await expect(preview).toBeVisible()
         const visible = () =>
           preview.evaluate((element) => {
@@ -135,16 +192,6 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
               .poll(() => panel.evaluate((element) => element.scrollTop))
               .toBeGreaterThan(100)
             await expect.poll(visible).toBe(true)
-          }
-          if (kind === 'html') {
-            await page.evaluate(axe.source)
-            expect(
-              await page.evaluate(
-                async () =>
-                  (await (window as unknown as { axe: typeof import('axe-core') }).axe.run())
-                    .violations,
-              ),
-            ).toEqual([])
           }
           await panel.focus()
           await panel.press('Escape')

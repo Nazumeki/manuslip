@@ -59,10 +59,18 @@ test('concurrent translation renders buffered responses in order and keeps its t
   await writeFile(path, source)
   const waiting: ServerResponse[] = []
   const server = createServer(async (incoming, reply) => {
-    for await (const _chunk of incoming) {
-      /* Drain the request while allowing responses to finish in any order. */
+    let body = ''
+    for await (const chunk of incoming) body += chunk.toString()
+    // Concurrent HTTP requests may arrive in either order. Route each response
+    // to its authored paragraph rather than assigning translations by arrival.
+    const index = ['First', 'Second', 'Third', 'Fourth'].findIndex((name) =>
+      body.includes(`${name} paragraph.`),
+    )
+    if (index < 0) {
+      reply.writeHead(400).end()
+      return
     }
-    waiting.push(reply)
+    waiting[index] = reply
   })
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
@@ -81,17 +89,17 @@ test('concurrent translation renders buffered responses in order and keeps its t
     expect(waiting).toHaveLength(0)
     await expect(page.getByRole('button', { name: 'Load cached', exact: true })).toHaveCount(0)
     await page.getByRole('button', { name: 'Translate', exact: true }).click()
-    await expect.poll(() => waiting.length).toBe(2)
+    await expect.poll(() => waiting.filter(Boolean).length).toBe(2)
     const article = page.locator('.reading-article')
     const translations = ['第一段。', '第二段。', '第三段。'].map(
       (text) => `${text}${'正文内容。'.repeat(120)}`,
     )
     answer(waiting[1] as ServerResponse, translations[1] as string)
-    await expect.poll(() => waiting.length).toBe(3)
+    await expect.poll(() => waiting.filter(Boolean).length).toBe(3)
     await expect(page.getByText('1 of 4 prose units translated · 0 cached')).toBeVisible()
     await expect(article).not.toContainText('第二段。')
     answer(waiting[2] as ServerResponse, translations[2] as string)
-    await expect.poll(() => waiting.length).toBe(4)
+    await expect.poll(() => waiting.filter(Boolean).length).toBe(4)
     await expect(page.getByText('2 of 4 prose units translated · 0 cached')).toBeVisible()
     await expect(article).not.toContainText('第三段。')
     answer(waiting[0] as ServerResponse, translations[0] as string)

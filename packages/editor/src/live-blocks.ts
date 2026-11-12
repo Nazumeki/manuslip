@@ -1,5 +1,6 @@
 import { type EditorState, type Range, StateField } from '@codemirror/state'
 import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemirror/view'
+import { unclosedCodeFence } from './fenced-code'
 import { editingBlock } from './live-editing'
 import { activateRendered } from './live-interactions'
 import { preserveProseLineBreaks } from './live-line-breaks'
@@ -174,7 +175,7 @@ export class RenderedWidget extends WidgetType {
       container.setAttribute('aria-description', this.options.sourceLabel())
       container.setAttribute(
         'aria-keyshortcuts',
-        this.block.kind === 'table' ? 'Enter F2' : 'Enter',
+        this.block.kind === 'table' ? 'Enter F2' : 'Enter Space',
       )
     }
     container.addEventListener(
@@ -231,6 +232,16 @@ export class RenderedWidget extends WidgetType {
           const index = links.indexOf(anchor)
           if (block && index >= 0)
             openLink(anchor.getAttribute('href') || '', { block, index, count: links.length })
+        } else if (
+          this.block.kind === 'html' &&
+          event instanceof MouseEvent &&
+          event.button === 0 &&
+          (event.ctrlKey || event.metaKey) &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
+          event.preventDefault()
+          activateRendered(view, container, event)
         } else if (
           event instanceof MouseEvent &&
           event.button === 0 &&
@@ -414,6 +425,8 @@ function build(state: EditorState, options: LiveOptions): BlockState {
     )
       continue
     const startLine = state.doc.lineAt(block.from)
+    if (['code', 'diagram'].includes(block.kind) && unclosedCodeFence(state, block.from, block.to))
+      continue
     const endLine = state.doc.lineAt(block.to)
     // Replacing line breaks requires a state field, even for an inline widget.
     const inline = inlineProjection(block.kind) && startLine.number !== endLine.number
@@ -451,7 +464,11 @@ function build(state: EditorState, options: LiveOptions): BlockState {
   }
   // A projected paragraph/list may own the active block's DOM. Editing source
   // and its companion belong to the session, independently of that outer widget.
-  if (editing && ['code', 'diagram', 'math', 'html'].includes(editing.block.kind)) {
+  if (
+    editing &&
+    ['code', 'diagram', 'math', 'html'].includes(editing.block.kind) &&
+    !unclosedCodeFence(state, editing.block.from, editing.block.to)
+  ) {
     const first = state.doc.lineAt(editing.from).number
     const last = state.doc.lineAt(editing.to).number
     for (let number = first; number <= last; number++)
@@ -462,7 +479,7 @@ function build(state: EditorState, options: LiveOptions): BlockState {
         }).range(state.doc.line(number).from),
       )
   }
-  if (editing && hasEditingPreview(editing.block) && !previewIsDocked(state))
+  if (editing && hasEditingPreview(editing.block, state) && !previewIsDocked(state))
     ranges.push(
       Decoration.widget({
         block: true,

@@ -12,6 +12,7 @@ import type { LiveOptions } from './live-model'
 import { livePreviewPlacement } from './live-preview-layout'
 import { livePreviewScroll } from './live-preview-scroll'
 import { tableEditing } from './live-table'
+import { liveTailClick } from './live-tail-click'
 import { liveMarkdownInput } from './markdown-input'
 
 export { navigateLiveAnchor } from './live-anchors'
@@ -40,6 +41,7 @@ export function livePreview(options: LiveOptions): Extension[] {
     inlineDecorations(options),
     tableEditing,
     liveInteractions(),
+    liveTailClick,
     livePreviewScroll(options),
     EditorView.editorAttributes.of({ 'data-mode': 'live' }),
     EditorView.theme({ '.cm-gutters': { display: 'none' } }),

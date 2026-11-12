@@ -2,9 +2,9 @@ import { EditorState, type Extension } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
 import { latexMarkdown } from '../../src/conventions'
 import { frontmatterEnd, yamlFrontmatter } from '../../src/frontmatter'
-import { createSourceState } from '../../src/index'
+import { createSourceState, redo, undo } from '../../src/index'
 import { editingBlock, editLiveBlock, liveEditing } from '../../src/live-editing'
-import { finishBlockTransaction } from '../../src/live-interactions'
+import { dismissEmptyBlock, finishBlockTransaction } from '../../src/live-interactions'
 import {
   composingEffect,
   isComposing,
@@ -24,6 +24,93 @@ function tail(source: string, extensions: Extension = []) {
 }
 
 describe('Live block entry', () => {
+  it.each(['```js', '~~~', '$$', '+++', '---'])(
+    'places the caret inside %s before existing prose and preserves that prose',
+    (opener) => {
+      const source = `${opener}\nAfter`
+      const state = createSourceState(source, {
+        extensions: [
+          latexMarkdown.of(true),
+          yamlFrontmatter.of(true),
+          liveModel,
+          liveEditing,
+          isComposing,
+        ],
+      }).update({ selection: { anchor: opener.length } }).state
+      const result = blockOpeningTransaction(state)
+      const closer = opener === '```js' ? '```' : opener
+      expect(result?.newDoc.toString()).toBe(`${opener}\n\n${closer}\n\nAfter`)
+      expect(result?.newSelection.main.head).toBe(opener.length + 1)
+      if (!result) throw new Error('Expected completion')
+      const typed = result.state.update(result.state.replaceSelection('inside')).state
+      expect(typed.doc.toString()).toBe(`${opener}\ninside\n${closer}\n\nAfter`)
+      expect(finishBlockTransaction(result.state, true)?.newSelection.main.head).toBe(
+        opener.length + closer.length + 4,
+      )
+      if (opener !== '+++' && opener !== '---') expect(editingBlock(result.state)).not.toBeNull()
+    },
+  )
+
+  it('isolates completion from typing in undo and redo', () => {
+    let state = createSourceState('')
+    state = state.update({
+      changes: { from: 0, insert: '```' },
+      selection: { anchor: 3 },
+      userEvent: 'input.type',
+    }).state
+    const completed = blockOpeningTransaction(state)
+    if (!completed) throw new Error('Expected completion')
+    state = completed.state
+    state = state.update({ selection: state.selection }).state
+    const target = {
+      get state() {
+        return state
+      },
+      dispatch(transaction: import('@codemirror/state').Transaction) {
+        state = transaction.state
+      },
+    }
+    expect(undo(target)).toBe(true)
+    expect(state.doc.toString()).toBe('```')
+    expect(state.selection.main.head).toBe(3)
+    expect(redo(target)).toBe(true)
+    expect(state.doc.toString()).toBe('```\n\n```')
+    expect(state.selection.main.head).toBe(4)
+  })
+
+  it.each(['```', '  ~~~', '$$', '+++', '---'])(
+    'lets Backspace dismiss an empty completed %s block',
+    (opener) => {
+      const state = createSourceState(opener, {
+        extensions: [yamlFrontmatter.of(true), liveModel, liveEditing, isComposing],
+      }).update({ selection: { anchor: opener.length } }).state
+      const completed = blockOpeningTransaction(state)
+      if (!completed) throw new Error('Expected completion')
+      const dismissed = dismissEmptyBlock(completed.state)
+      expect(dismissed?.newDoc.toString()).toBe(opener)
+      expect(dismissed?.newSelection.main.head).toBe(opener.length)
+      const typed = completed.state.update(completed.state.replaceSelection('keep')).state
+      expect(dismissEmptyBlock(typed)).toBeNull()
+    },
+  )
+
+  it.each([
+    '```js\nbody\n```',
+    '  ```js\nbody\n  ```',
+    '   ~~~\nbody\n   ~~~',
+    '$$\nx\n$$',
+    '+++\ntitle = "x"\n+++',
+  ])('does not duplicate an existing closer when Enter is pressed on %s', (source) => {
+    const state = createSourceState(source).update({
+      selection: { anchor: source.indexOf('\n') },
+    }).state
+    expect(blockOpeningTransaction(state)).toBeNull()
+  })
+  it('completes TOML metadata independently of the YAML switch', () => {
+    expect(blockOpeningTransaction(tail('+++', yamlFrontmatter.of(false)))?.newDoc.toString()).toBe(
+      '+++\n\n+++',
+    )
+  })
   it('leaves a closing fence beyond syntax coverage to ordinary Enter', () => {
     const source = `${'Paragraph **text**.\n\n'.repeat(1000)}\`\`\`js\ntext\n\`\`\``
     expect(blockOpeningTransaction(tail(source))).toBeNull()
@@ -105,6 +192,12 @@ describe('explicit block completion', () => {
     (source) => expect(finishBlockTransaction(editing(source, 'code'), true)).toBeNull(),
   )
 
+  it('does not pretend to exit an unclosed code fence at EOF', () => {
+    const state = editing('```\ntext', 'code')
+    const atEnd = state.update({ selection: { anchor: state.doc.length } }).state
+    expect(finishBlockTransaction(atEnd, true)).toBeNull()
+  })
+
   it.each(['````js\ntext\n`````', '~~~js\ntext\n~~~~'])(
     'accepts a longer matching closing fence: %s',
     (source) =>
@@ -114,7 +207,7 @@ describe('explicit block completion', () => {
   )
 
   it.each(['math', 'code', 'diagram'])(
-    'finishes %s only at the body end, and creates a following paragraph',
+    'finishes %s from its body and creates a following paragraph',
     (kind) => {
       const source = kind === 'math' ? '$$\nx\n$$' : '```\nx\n```'
       const state = editing(source, kind)
@@ -124,8 +217,11 @@ describe('explicit block completion', () => {
       if (!transaction) throw new Error('Expected completion')
       expect(editingBlock(transaction.state)).toBeNull()
       expect(
-        finishBlockTransaction(state.update({ selection: { anchor: 3 } }).state, true),
-      ).toBeNull()
+        finishBlockTransaction(
+          state.update({ selection: { anchor: source.indexOf('\n') + 1 } }).state,
+          true,
+        )?.newDoc.toString(),
+      ).toBe(`${source}\n\n`)
     },
   )
 

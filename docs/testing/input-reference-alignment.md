@@ -25,7 +25,7 @@ interaction or platform has identical behavior.
 | --- | --- |
 | Empty Markdown caret | `(`, `[`, `{`, `<` generate their closer before whitespace, EOF, or Zed's `;:.,=}])>` boundary characters. |
 | Prose markers | Quotes, backticks, `*`, and `~` remain literal at an empty caret and surround selected text. `_`, `$`, `=`, and `^` remain literal. |
-| Selected content | Surrounds retain the selected content, direction, and independent ranges. A second marker can surround the same selection. |
+| Selected content | Surrounds retain the selected content, direction, and independent ranges. A second marker can surround the same selection. A selection made entirely of delimiter characters is replaced literally, so editing a closer never recursively surrounds it. |
 | Escaped opener | An opener preceded by an odd backslash run stays literal. |
 | Owned closer | Typing the generated closer moves the caret across it with no source mutation. Authored closers remain ordinary input. |
 | Empty pair deletion | Backspace removes an owned empty pair atomically. Other carets delete their own selection or complete grapheme. |
@@ -35,7 +35,10 @@ interaction or platform has identical behavior.
 | Composition | Pair input, pair Backspace, pair Enter, block opening, navigation and block finishing defer to native composition. No text comes from a key name or synthetic `beforeinput` event. |
 | Delayed projection | A selection-only closer skip retains the input caret, so a semantic publication cannot hide source before the next native input. |
 | Source Enter | Continues existing Markdown lists and blockquotes; an empty item removes its marker. |
-| Live block entry | Enter after a tail code fence, `$$`, or enabled first-line YAML opener creates its empty body and matching closing line. Existing closing fences, literal HTML/comment content, and source beyond available syntax coverage remain literal. LaTeX/YAML switches govern their own openers. |
+| Live block entry | Enter after a code fence, `$$`, or first-line TOML/enabled YAML opener creates its empty body and matching closing line, including before existing prose. The caret starts inside the body; code indentation is retained. Source editing activates in the same transaction without waiting for a semantic publication. Existing closers and HTML/comment content are never completed again. |
+| Completion history | Completion is an isolated undo step. Undo restores the opener; redo restores the interior caret. Backspace in an empty body dismisses the completion and returns to the opener without removing neighboring text. |
+| Unfinished fences | Live Preview retains unclosed code/diagram fences as editable source. Reading and export retain CommonMark's EOF fence semantics. |
+| Delimiter visibility | Both metadata fences stay visible while its source is active; rule markers stay literal under the caret. Code-fence markers use the surrounding source font size and theme colors. |
 | Metadata typing | A single-line `+++` or enabled `---` cannot iterate a nonexistent second line or leave DOM input absent from accepted source. |
 | Dollar math | Default single-dollar math rejects leading/trailing whitespace, a backslash immediately before the closer, and a digit immediately after it. Escaped interior dollars remain TeX source. Flow math and double-dollar grammar retain the pinned compiler. |
 | Scripts | Escaped spaces in existing subscript/superscript syntax render as spaces. Original Markdown positions and saved bytes remain intact. |
@@ -45,12 +48,27 @@ interaction or platform has identical behavior.
 | Table history | Row creation and any selected-cell deletion form one atomic parent-history entry. Rejected row creation preserves the selected content. Cell input, normalization, caret forwarding and undo continue to use that same source. |
 | Empty table cells | New text is placed between existing padding, including generated empty rows. |
 | Table limits | Direct row creation shares the dialog's row, column, total-cell and source-byte limits. Normalized cell input shares its cell-unit limit. |
-| Block Mod+Enter | At the end of a math, code or diagram body, finishes editing and opens the following paragraph. Middle-body input and Shift+Enter retain their existing paths. Escape finishes a source session without changing source. |
+| Leaving a block | Mod+Enter from anywhere in a closed code, diagram, math or metadata body moves below it without altering the body. Down Arrow at the body end or closing-line end does the same. Existing paragraph spacing is reused; EOF receives a blank paragraph. Ordinary Enter remains inside the body. Escape finishes a source session without changing source. Selection, read-only state and composition suppress these editing gestures. |
 | Semantic scheduling | Small Live documents coalesce completion punctuation for 16 ms; ordinary input, paste and large documents retain the 150 ms debounce. Parsing stays in the worker with one running and one newest pending request. |
 | Input information | Accepted-source measures record positions, lengths, selection counts and punctuation actions. Selection-only skips are measured separately and never counted as document edits. No document content is added to performance metadata. |
 | Transport timing | Cross-context transport delays are bounded at zero because independently rounded performance clocks can otherwise report small negative durations. The benchmark continues to reject invalid samples. |
 
 ## Native timing evidence
+
+The completion UX refinement also checks Typora's documented
+[fence entry](https://support.typora.io/Code-Fences/) and
+[optional auto-pair behavior](https://support.typora.io/Auto-Pair/). The local
+`003544_fences.js` handles Down at the last body line and Backspace in an empty
+code editor. Manuslip adopts those navigation principles while keeping its
+closing delimiters editable. It does not enable every optional Typora punctuation
+pair by default or claim identical UI behavior.
+
+The regression suite `test/e2e/input-reference-alignment.spec.ts` verifies native
+typing immediately after completion and redo, mid-document insertion, body exits,
+empty-block dismissal, literal closer replacement, and exact saved source. Unit
+tests additionally cover indentation, metadata/plugin switches, syntax coverage,
+existing closers and undo isolation. The measurements below describe the earlier
+input pass, not new performance measurements for this refinement.
 
 [Raw observations](input-reference-performance.json) contain six verified samples
 per case from an isolated, unpackaged production Electron build. Each sample

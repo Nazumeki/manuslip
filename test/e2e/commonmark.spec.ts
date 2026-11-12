@@ -56,7 +56,11 @@ test('CommonMark code blocks render with exact literal content and optional high
         text: 'literal `code` &amp;\n',
         language: 'unknown',
       },
-      { source: '   ```\n   unfinished <tag> **literal**', text: 'unfinished <tag> **literal**\n' },
+      {
+        source: '   ```\n   unfinished <tag> **literal**',
+        text: 'unfinished <tag> **literal**\n',
+        unfinished: true,
+      },
       { source: '```\n```', text: '' },
       { source: '    first\n\n    second\n\n', text: 'first\n\nsecond\n' },
       {
@@ -76,6 +80,11 @@ test('CommonMark code blocks render with exact literal content and optional high
       await editor.press(`${modifier}+End`)
       await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
       const code = editor.locator('pre > code')
+      if (example.unfinished) {
+        await expect(code).toHaveCount(0)
+        await expect(editor).toContainText('unfinished <tag> **literal**')
+        continue
+      }
       await expect(code).toHaveCount(1)
       if (index === 0) await page.screenshot({ path: test.info().outputPath('indented-code.png') })
       expect(await code.textContent()).toBe(example.text)

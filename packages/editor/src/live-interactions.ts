@@ -1,40 +1,32 @@
+import { isolateHistory } from '@codemirror/commands'
 import { EditorSelection, type EditorState, type Extension, Prec } from '@codemirror/state'
 import { type EditorView, keymap } from '@codemirror/view'
+import { closedBlockAt } from './block-boundaries'
 import { activateLiveBlock, editingBlock, editLiveBlock } from './live-editing'
 import { blockSourceRange, inlineProjection, isComposing } from './live-model'
 import { blockAtPreview, previewHitAtPoint } from './live-preview-position'
 import { delimitedSourcePosition } from './live-source-position'
 
 export function finishBlockTransaction(state: EditorState, paragraph = false) {
-  const editing = editingBlock(state)
-  if (!editing || state.readOnly || state.field(isComposing, false)) return null
+  if (state.readOnly || state.field(isComposing, false)) return null
   if (paragraph) {
-    if (!['math', 'code', 'diagram'].includes(editing.block.kind)) return null
     const selection = state.selection.main
     if (!selection.empty || state.selection.ranges.length !== 1) return null
-    const last = state.doc.lineAt(editing.block.to)
-    const first = state.doc.lineAt(editing.block.from)
-    const opening = state.doc.sliceString(editing.block.from, first.to)
-    const fence = /^ {0,3}(`{3,}|~{3,})/.exec(opening)?.[1]
-    const endFence = /^ {0,3}(`{3,}|~{3,})[\t ]*$/.exec(last.text)?.[1]
-    const closing =
-      first.number < last.number &&
-      (editing.block.kind === 'math'
-        ? (/^ {0,3}\$\$/.test(opening) && /^ {0,3}\$\$[\t ]*$/.test(last.text)) ||
-          (/^ {0,3}\\\[/.test(opening) && /^ {0,3}\\\][\t ]*$/.test(last.text))
-        : !!fence && !!endFence && fence[0] === endFence[0] && endFence.length >= fence.length)
-    const bodyEnd = closing ? last.from - 1 : editing.block.to
-    if (selection.head !== bodyEnd) return null
-    const after = state.doc.sliceString(editing.to, Math.min(state.doc.length, editing.to + 2))
+    const block = closedBlockAt(state, selection.head)
+    if (!block || selection.head < block.bodyFrom) return null
+    const after = state.sliceDoc(block.to, Math.min(state.doc.length, block.to + 2))
     const insert = after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n'
     return state.update({
-      ...(insert ? { changes: { from: editing.to, insert } } : {}),
+      ...(insert ? { changes: { from: block.to, insert } } : {}),
       effects: editLiveBlock.of(null),
-      selection: { anchor: editing.to + 2 },
+      selection: { anchor: block.to + 2 },
+      annotations: isolateHistory.of('full'),
       userEvent: 'input.type',
       scrollIntoView: true,
     })
   }
+  const editing = editingBlock(state)
+  if (!editing) return null
   const at =
     !inlineProjection(editing.block.kind) && blockSourceRange(state, editing.block)
       ? Math.min(state.doc.length, editing.to + 1)
@@ -51,12 +43,46 @@ export function liveInteractions(): Extension {
     Prec.high(
       keymap.of([
         {
+          key: 'ArrowDown',
+          run(view) {
+            if (view.compositionStarted) return false
+            const selection = view.state.selection.main
+            const block = closedBlockAt(view.state, selection.head)
+            if (!block || (selection.head !== block.bodyTo && selection.head !== block.to))
+              return false
+            const transaction = finishBlockTransaction(view.state, true)
+            if (!transaction) return false
+            view.dispatch(transaction)
+            return true
+          },
+        },
+        {
+          key: 'Backspace',
+          run(view) {
+            if (view.compositionStarted) return false
+            const transaction = dismissEmptyBlock(view.state)
+            if (!transaction) return false
+            view.dispatch(transaction)
+            return true
+          },
+        },
+        {
           key: 'Escape',
           run(view) {
             if (view.compositionStarted) return false
+            const editing = editingBlock(view.state)
             const transaction = finishBlockTransaction(view.state)
             if (!transaction) return false
             view.dispatch(transaction)
+            if (editing?.block.kind === 'html') {
+              // Return keyboard users to the output they just finished editing.
+              // Native typing stays in the source editor until Escape is explicit.
+              const output = [...view.dom.querySelectorAll<HTMLElement>('.cm-live-html')].find(
+                (element) => blockAtPreview(view, element)?.from === editing.block.from,
+              )
+              output?.focus({ preventScroll: true })
+              output?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+            }
             return true
           },
         },
@@ -73,6 +99,33 @@ export function liveInteractions(): Extension {
       ]),
     ),
   ]
+}
+
+export function dismissEmptyBlock(state: EditorState) {
+  const selection = state.selection.main
+  if (
+    state.readOnly ||
+    state.field(isComposing, false) ||
+    !selection.empty ||
+    state.selection.ranges.length !== 1
+  )
+    return null
+  const block = closedBlockAt(state, selection.head)
+  if (
+    !block ||
+    selection.head !== block.bodyTo ||
+    block.bodyTo < block.bodyFrom ||
+    !/^[\t ]*$/.test(state.sliceDoc(block.bodyFrom, block.bodyTo))
+  )
+    return null
+  return state.update({
+    changes: { from: block.bodyFrom - 1, to: block.to },
+    selection: { anchor: block.bodyFrom - 1 },
+    effects: editLiveBlock.of(null),
+    annotations: isolateHistory.of('full'),
+    userEvent: 'delete.backward',
+    scrollIntoView: true,
+  })
 }
 
 export function activateRendered(

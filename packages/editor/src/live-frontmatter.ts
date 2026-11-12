@@ -5,6 +5,7 @@ import { frontmatterEnd } from './frontmatter'
 function fences(state: EditorState): DecorationSet {
   const end = state.field(frontmatterEnd)
   if (!end) return Decoration.none
+  if (state.selection.ranges.some((range) => range.from <= end)) return Decoration.none
   const opening = state.doc.line(1)
   const closing = state.doc.lineAt(end)
   // Metadata text stays in CodeMirror. Only its source delimiters are hidden,
@@ -23,6 +24,7 @@ export const frontmatterDecorations = StateField.define<DecorationSet>({
   create: fences,
   update: (previous, transaction) =>
     transaction.docChanged ||
+    transaction.selection ||
     transaction.startState.field(frontmatterEnd) !== transaction.state.field(frontmatterEnd)
       ? fences(transaction.state)
       : previous,

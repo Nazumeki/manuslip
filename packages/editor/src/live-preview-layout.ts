@@ -1,10 +1,16 @@
 import { type EditorState, StateEffect, StateField } from '@codemirror/state'
-import { type LiveEditing, editingBlock, editLiveBlock } from './live-editing'
+import { unclosedCodeFence } from './fenced-code'
+import { editingBlock, editLiveBlock, type LiveEditing } from './live-editing'
 import type { LiveBlock } from './live-model'
 
 /** Preview ownership follows the editing session, including pending worker results. */
-export function hasEditingPreview(block: LiveBlock): boolean {
-  return ['math', 'inlineMath', 'diagram', 'html'].includes(block.kind)
+export function hasEditingPreview(block: LiveBlock, state: EditorState): boolean {
+  // HTML switches between editable source and rendered output. Showing both
+  // while typing duplicates the block and can move the caret as output grows.
+  return (
+    ['math', 'inlineMath', 'diagram'].includes(block.kind) &&
+    !(block.kind === 'diagram' && unclosedCodeFence(state, block.from, block.to))
+  )
 }
 
 export const dockLivePreview = StateEffect.define<LiveEditing>()
@@ -18,7 +24,7 @@ export const livePreviewPlacement = StateField.define<boolean>({
     const editing = editingBlock(transaction.state)
     if (
       !editing ||
-      !hasEditingPreview(editing.block) ||
+      !hasEditingPreview(editing.block, transaction.state) ||
       transaction.effects.some((effect) => effect.is(editLiveBlock))
     )
       return false

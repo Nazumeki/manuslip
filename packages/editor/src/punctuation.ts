@@ -76,6 +76,7 @@ const markdownPairs = new Map([
   ['~', '~'],
 ])
 const before = ';:.,=}])>'
+const delimiters = new Set([...markdownPairs].flat())
 
 function configuration(state: EditorState, at: number) {
   const language = state.languageDataAt<{ brackets?: string[] }>('closeBrackets', at)[0]
@@ -125,7 +126,12 @@ export function punctuationTransaction(state: EditorState, text: string) {
   const changes = state.changeByRange((range) => {
     const config = configuration(state, range.head)
     const close = config.pairs.get(text)
-    if (!range.empty && close) {
+    // Replacing a selected delimiter must not wrap it in yet more delimiters.
+    // Keep surround-selection for content, including repeated emphasis gestures.
+    const replacingDelimiter =
+      !range.empty &&
+      [...state.sliceDoc(range.from, range.to)].every((char) => delimiters.has(char))
+    if (!range.empty && close && !replacingDelimiter) {
       action.surrounded++
       return {
         changes: [

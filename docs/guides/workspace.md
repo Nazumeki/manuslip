@@ -68,6 +68,19 @@ Check both interface languages, Chinese input, mixed RTL/LTR text, long paths, f
 reduced motion, 320px width and 200% zoom. Keep narrow commands reachable.
 Focus/typewriter modes remain retired under [ADR 005](../adr/005-writing-modes.md).
 
+## Completing and leaving Markdown blocks
+
+In Live Preview, type three backticks (optionally followed by a language) and
+press Enter. The editor adds the closing fence and puts the caret on the empty
+line inside. The same flow works for `$$` math and initial `+++` metadata;
+initial `---` metadata requires the Typora extension.
+
+Enter adds lines inside the body. Down Arrow at the body's end moves below the
+block; Ctrl+Enter (Cmd+Enter on macOS) does so from anywhere in the body. You can
+also click or select either fence and edit it as ordinary text. Backspace in an
+empty body returns to the opener. Undo removes the completion in one step, and
+redo puts the caret back inside. Completion preserves any prose below the block.
+
 ## Design reference
 
 [Typora's quick start](https://support.typora.io/Quick-Start/) is the reference for readable

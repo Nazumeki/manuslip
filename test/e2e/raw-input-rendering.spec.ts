@@ -43,7 +43,7 @@ async function saved(page: Page, path: string, expected: string): Promise<void> 
 }
 
 for (const mode of ['Source', 'Live Preview']) {
-  test(`${mode} types literal punctuation without inserting pairs, tags or indentation`, async () => {
+  test(`${mode} pairs brackets, keeps prose markers literal and continues Markdown indentation`, async () => {
     await documentFixture('', async (page, _application, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
       const editor = page.getByRole('textbox', { name: 'Markdown source' })
@@ -51,7 +51,11 @@ for (const mode of ['Source', 'Live Preview']) {
         await editor.press(`${modifier}+a`)
         await editor.press('Backspace')
         await page.keyboard.type(literal)
-        await saved(page, path, literal)
+        await saved(
+          page,
+          path,
+          ({ '(': '()', '[': '[]', '{': '{}' } as Record<string, string>)[literal] ?? literal,
+        )
       }
       for (const prefix of ['    text', '- item', '1. item', '> quote']) {
         // Native Select All includes source hidden behind CodeMirror's widgets.
@@ -62,7 +66,13 @@ for (const mode of ['Source', 'Live Preview']) {
         await page.keyboard.type('next')
         await editor.press('Tab')
         await page.keyboard.type('tab')
-        await saved(page, path, `${prefix}\nnext\ttab`)
+        const continuation = (
+          { '    text': '', '- item': '- ', '1. item': '2. ', '> quote': '> ' } as Record<
+            string,
+            string
+          >
+        )[prefix]
+        await saved(page, path, `${prefix}\n${continuation}next\ttab`)
       }
     })
   })

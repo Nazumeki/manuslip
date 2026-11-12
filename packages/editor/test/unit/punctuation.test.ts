@@ -17,6 +17,28 @@ function type(state: EditorState, text: string) {
 }
 
 describe('Zed punctuation ownership', () => {
+  it.each(['```', '***', '"', ')', ']', '}'])(
+    'replaces selected punctuation %s instead of surrounding it',
+    (source) => {
+      const state = createSourceState(source).update({
+        selection: { anchor: 0, head: source.length },
+      }).state
+      expect(type(state, '`').doc.toString()).toBe('`')
+      expect(type(state, '(').doc.toString()).toBe('(')
+    },
+  )
+  it.each(['()', '[]', '{}', '<>'])(
+    'allows replacing and deleting the generated closer in %s',
+    (pair) => {
+      const generated = type(createSourceState(''), pair.charAt(0))
+      const selected = generated.update({ selection: { anchor: 1, head: 2 } }).state
+      const replaced = type(selected, '!')
+      expect(replaced.doc.toString()).toBe(`${pair[0]}!`)
+      const deleted = generated.update({ changes: { from: 1, to: 2 } }).state
+      expect(type(deleted, pair.charAt(1)).doc.toString()).toBe(pair)
+      expect(type(replaced, pair.charAt(1)).doc.toString()).toBe(`${pair[0]}!${pair[1]}`)
+    },
+  )
   it('opens a generated bracket body on Enter and preserves its closer ownership', () => {
     const state = type(createSourceState('  ').update({ selection: { anchor: 2 } }).state, '{')
     const expanded = punctuationNewline(state)

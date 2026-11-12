@@ -275,7 +275,7 @@ test('reused HTML and math previews resolve source positions after edits before 
   }
 })
 
-test('a docked preview keeps one renderer and releases it on source mode and document teardown', async () => {
+test('HTML editing releases its renderer and preserves teardown ownership without a preview panel', async () => {
   const fixture = await setup()
   try {
     const { page } = fixture
@@ -292,15 +292,12 @@ test('a docked preview keeps one renderer and releases it on source mode and doc
     await collapsed.focus()
     await collapsed.press('Enter')
     const panel = page.locator('.cm-live-preview-panel')
-    await expect(panel.locator('.cm-live-edit-preview')).toHaveCount(1)
-    await expect(panel).toBeVisible()
+    await expect(panel).toHaveCount(0)
+    await expect(page.locator('.cm-live-edit-preview')).toHaveCount(0)
     // The following paragraph is outside CodeMirror's virtualized viewport.
-    await expect.poll(() => page.evaluate(() => window.previewLifetime.counts().connected)).toBe(1)
+    await expect.poll(() => page.evaluate(() => window.previewLifetime.counts().connected)).toBe(0)
     const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
     await editor.press('ArrowDown')
-    const before = await page.evaluate(() => window.previewLifetime.snapshot().selection)
-    await panel.locator('b').click()
-    expect(await page.evaluate(() => window.previewLifetime.snapshot().selection)).toBe(before)
     await expect(editor).toBeFocused()
     await page.evaluate(() => window.previewLifetime.sourceMode())
     await expect(panel).toHaveCount(0)
@@ -410,7 +407,7 @@ test('inline source exposes quiet paired markers at the caret and preserves nati
       ['- title', '• title', 2, 5, '- title'],
       ['- [ ] title', 'title', 6, 9, '-  title'],
       ['&amp;', '&', 1, 3, '&&amp;'],
-      ['---', '', 0, 2, ''],
+      ['---', '', 0, 2, '---'],
     ] as const) {
       await page.evaluate((raw) => window.previewLifetime.setSource(`${raw}\n\nEnd`), raw)
       for (const position of [0, from, from + 1, raw.length]) {

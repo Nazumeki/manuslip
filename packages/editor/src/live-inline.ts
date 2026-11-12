@@ -12,6 +12,7 @@ import type { SyntaxNode } from '@lezer/common'
 import { semanticLimits } from '@manuslip/core'
 import { decodeString } from 'micromark-util-decode-string'
 import { optMarkdown } from './conventions'
+import { unclosedCodeFence } from './fenced-code'
 import { frontmatterEnd } from './frontmatter'
 import { RenderedWidget } from './live-blocks'
 import { caretTouches, editingBlock } from './live-editing'
@@ -330,6 +331,7 @@ function inline(view: EditorView, options: LiveOptions): InlineState {
         if (node.to <= metadataEnd) return false
         if (inSourceBlock(node.from, node.to)) return false
         if (['FencedCode', 'CodeBlock'].includes(name)) {
+          if (name === 'FencedCode' && unclosedCodeFence(state, node.from, node.to)) return false
           if (touches(state, node.from, node.to)) {
             const end = Math.min(node.to, visible.to)
             for (
@@ -444,7 +446,11 @@ function inline(view: EditorView, options: LiveOptions): InlineState {
               Decoration.replace({ widget: new TextWidget(value) }).range(node.from, node.to),
             )
         }
-        if (name === 'HorizontalRule' && !selectionTouches(state.selection, node.from, node.to))
+        if (
+          name === 'HorizontalRule' &&
+          !selectionTouches(state.selection, node.from, node.to) &&
+          !caretTouches(state, node.from, node.to)
+        )
           decorations.push(
             Decoration.replace({ widget: new RuleWidget() }).range(node.from, node.to),
           )
