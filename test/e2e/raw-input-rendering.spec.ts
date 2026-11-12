@@ -57,7 +57,7 @@ for (const mode of ['Source', 'Live Preview']) {
           ({ '(': '()', '[': '[]', '{': '{}' } as Record<string, string>)[literal] ?? literal,
         )
       }
-      for (const prefix of ['    text', '- item', '1. item', '> quote']) {
+      for (const prefix of ['    text', '- item', '1. item', '> quote'] as const) {
         // Native Select All includes source hidden behind CodeMirror's widgets.
         await editor.press(`${modifier}+a`)
         await page.keyboard.insertText(prefix)
@@ -66,13 +66,14 @@ for (const mode of ['Source', 'Live Preview']) {
         await page.keyboard.type('next')
         await editor.press('Tab')
         await page.keyboard.type('tab')
-        const continuation = (
-          { '    text': '', '- item': '- ', '1. item': '2. ', '> quote': '> ' } as Record<
-            string,
-            string
-          >
-        )[prefix]
-        await saved(page, path, `${prefix}\n${continuation}next\ttab`)
+        const continuation = { '    text': '', '- item': '- ', '1. item': '2. ', '> quote': '> ' }[
+          prefix
+        ]
+        const expected =
+          prefix === '- item' || prefix === '1. item'
+            ? `${prefix}\n${' '.repeat(continuation.length)}${continuation}nexttab`
+            : `${prefix}\n${continuation}next\ttab`
+        await saved(page, path, expected)
       }
     })
   })

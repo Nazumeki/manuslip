@@ -2,6 +2,7 @@ import {
   defaultKeymap,
   history,
   historyKeymap,
+  indentLess,
   insertNewline,
   insertTab,
 } from '@codemirror/commands'
@@ -25,6 +26,8 @@ import { utf8Bytes } from '@manuslip/core/text'
 import { frontmatterEnd } from './frontmatter'
 import { sourceHighlightStyle } from './highlight'
 import { changedByteLength, documentBytes, limitRejected, maxDocumentBytes } from './limits'
+import { markdownFormatting } from './markdown-format'
+import { listIndentTransaction } from './markdown-list'
 import { defaultEditorPreferences, type EditorPreferences } from './preferences'
 import { punctuationInput, punctuationNewline } from './punctuation'
 import { textSelection } from './selection'
@@ -107,6 +110,7 @@ function sourceExtensions(options: SourceEditorOptions): Extension[] {
     punctuationInput,
     frontmatterEnd,
     documentBytes,
+    markdownFormatting(),
     EditorState.transactionFilter.of((transaction) => {
       if (
         !transaction.docChanged ||
@@ -157,7 +161,23 @@ function sourceExtensions(options: SourceEditorOptions): Extension[] {
           return insertNewlineContinueMarkup(view) || insertNewline(view)
         },
       },
-      { key: 'Tab', run: insertTab },
+      {
+        key: 'Tab',
+        run: (view) => {
+          if (view.compositionStarted) return false
+          const transaction = listIndentTransaction(view.state)
+          if (!transaction) return insertTab(view)
+          view.dispatch(transaction)
+          return true
+        },
+        shift: (view) => {
+          if (view.compositionStarted) return false
+          const transaction = listIndentTransaction(view.state, true)
+          if (!transaction) return indentLess(view)
+          view.dispatch(transaction)
+          return true
+        },
+      },
       ...defaultKeymap,
       ...searchKeymap,
       ...historyKeymap,

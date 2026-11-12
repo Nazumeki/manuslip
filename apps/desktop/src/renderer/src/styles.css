@@ -1691,6 +1691,9 @@ main.editing {
   overflow-wrap: anywhere;
   white-space: normal;
 }
+.cm-live-prose-text {
+  white-space: break-spaces;
+}
 .cm-live-rendered :is(p, blockquote, ul, ol, pre) {
   margin-block: 0.75em;
 }

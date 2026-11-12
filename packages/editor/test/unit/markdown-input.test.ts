@@ -12,7 +12,7 @@ import {
   liveModel,
   setLiveModel,
 } from '../../src/live-model'
-import { blockOpeningTransaction } from '../../src/markdown-input'
+import { blockOpeningTransaction, paragraphBreakTransaction } from '../../src/markdown-input'
 import { sourceSyntax } from '../../src/syntax'
 
 function tail(source: string, extensions: Extension = []) {
@@ -22,6 +22,48 @@ function tail(source: string, extensions: Extension = []) {
     extensions: [frontmatterEnd, sourceSyntax, extensions],
   })
 }
+
+describe('Live prose paragraph entry', () => {
+  it.each([
+    ['**alpha beta**', 7, 8, '**alpha**\n\n**beta**', 13],
+    ['**alpha beta**', 7, 7, '**alpha**\n\n**beta**', 13],
+    ['**alpha beta**', 8, 8, '**alpha**\n\n**beta**', 13],
+    ['***alpha  beta***', 9, 9, '***alpha***\n\n***beta***', 16],
+    ['**alpha\nbeta**', 7, 7, '**alpha**\n\n**beta**', 13],
+    ['**alpha\nbeta**', 8, 8, '**alpha**\n\n**beta**', 13],
+    ['***alpha beta***', 8, 9, '***alpha***\n\n***beta***', 16],
+    ['**alpha**', 2, 2, '\n\n**alpha**', 4],
+    ['**alpha**', 7, 7, '**alpha**\n\n', 11],
+    ['__alpha beta__', 7, 8, '__alpha__\n\n__beta__', 13],
+  ] as const)('keeps emphasis valid when splitting %s', (source, anchor, head, expected, caret) => {
+    const state = tail(source).update({ selection: { anchor, head } }).state
+    const result = paragraphBreakTransaction(state)
+    expect(result?.newDoc.toString()).toBe(expected)
+    expect(result?.newSelection.main.head).toBe(caret)
+  })
+
+  it('splits ordinary prose with a blank line and replaces selected prose', () => {
+    expect(paragraphBreakTransaction(tail('alpha'))?.newDoc.toString()).toBe('alpha\n\n')
+    const state = tail('alpha beta').update({ selection: { anchor: 5, head: 6 } }).state
+    const paragraph = paragraphBreakTransaction(state)
+    expect(paragraph?.newDoc.toString()).toBe('alpha\n\nbeta')
+    expect(paragraph?.newSelection.main.head).toBe(7)
+  })
+
+  it.each(['- alpha', '3. alpha', '> alpha', '    alpha', '```\nalpha', '<div>\nalpha', '# alpha'])(
+    'leaves structural input to its existing command: %s',
+    (source) => expect(paragraphBreakTransaction(tail(source))).toBeNull(),
+  )
+
+  it('does not split metadata, read-only prose, or an active composition', () => {
+    expect(
+      paragraphBreakTransaction(tail('---\ntitle: alpha\n---', yamlFrontmatter.of(true))),
+    ).toBeNull()
+    expect(paragraphBreakTransaction(tail('alpha', EditorState.readOnly.of(true)))).toBeNull()
+    const composing = tail('alpha', isComposing).update({ effects: composingEffect.of(true) }).state
+    expect(paragraphBreakTransaction(composing)).toBeNull()
+  })
+})
 
 describe('Live block entry', () => {
   it.each(['```js', '~~~', '$$', '+++', '---'])(

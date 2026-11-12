@@ -1,11 +1,77 @@
 import { isolateHistory } from '@codemirror/commands'
-import { syntaxTree, syntaxTreeAvailable } from '@codemirror/language'
-import type { EditorState } from '@codemirror/state'
-import { Prec } from '@codemirror/state'
+import { ensureSyntaxTree, syntaxTree, syntaxTreeAvailable } from '@codemirror/language'
+import { EditorSelection, type EditorState, Prec } from '@codemirror/state'
 import { keymap } from '@codemirror/view'
+import type { SyntaxNode } from '@lezer/common'
+import { closedBlockAt } from './block-boundaries'
 import { latexMarkdown } from './conventions'
 import { frontmatterEnd, yamlFrontmatter } from './frontmatter'
 import { editLiveBlock, liveEditing } from './live-editing'
+import { isComposing } from './live-model'
+import { punctuationNewline } from './punctuation'
+
+function splitEmphasis(state: EditorState, node: SyntaxNode, at: number, side: -1 | 1) {
+  let position = at,
+    marks = ''
+  for (let current: SyntaxNode | null = node; current; current = current.parent) {
+    if (!['Emphasis', 'StrongEmphasis'].includes(current.name)) continue
+    const [opening, closing] = current.getChildren('EmphasisMark')
+    if (!opening || !closing || at < opening.to || at > closing.from) continue
+    let content =
+      side < 0 ? state.sliceDoc(opening.to, position) : state.sliceDoc(position, closing.from)
+    // Whitespace cannot sit directly inside an emphasis delimiter. The paragraph
+    // boundary replaces adjoining whitespace when splitting a style.
+    const padding = (side < 0 ? /\s+$/ : /^\s+/).exec(content)?.[0].length ?? 0
+    position += side * padding
+    content =
+      side < 0 ? state.sliceDoc(opening.to, position) : state.sliceDoc(position, closing.from)
+    if (content.trim())
+      marks =
+        side < 0
+          ? marks + state.sliceDoc(closing.from, closing.to)
+          : state.sliceDoc(opening.from, opening.to) + marks
+    // Avoid leaving empty emphasis at the beginning or end of a paragraph.
+    else position = side < 0 ? opening.from : closing.to
+  }
+  return { position, marks }
+}
+
+/** Live prose uses blank-line paragraph boundaries; Source retains literal newlines. */
+export function paragraphBreakTransaction(state: EditorState) {
+  if (state.readOnly || state.field(isComposing, false)) return null
+  const tree = ensureSyntaxTree(state, state.selection.ranges.at(-1)?.to ?? 0, 20)
+  if (!tree) return null
+  for (const range of state.selection.ranges) {
+    for (const at of [range.from, range.to]) {
+      if (at < (state.field(frontmatterEnd, false) ?? 0) || closedBlockAt(state, at)) return null
+      let paragraph = false
+      for (let node = tree.resolveInner(at, at === state.doc.lineAt(at).from ? 1 : -1); node; ) {
+        if (['FencedCode', 'CodeBlock', 'HTMLBlock', 'ListItem', 'Blockquote'].includes(node.name))
+          return null
+        if (node.name === 'Paragraph') paragraph = true
+        if (!node.parent) break
+        node = node.parent
+      }
+      if (!paragraph) return null
+    }
+  }
+  return state.update(
+    state.changeByRange((range) => {
+      const before = splitEmphasis(state, tree.resolveInner(range.from, 1), range.from, -1)
+      const after = splitEmphasis(state, tree.resolveInner(range.to, -1), range.to, 1)
+      const insert = `${before.marks}\n\n${after.marks}`
+      return {
+        changes: { from: before.position, to: after.position, insert },
+        range: EditorSelection.cursor(before.position + insert.length),
+      }
+    }),
+    {
+      annotations: isolateHistory.of('full'),
+      userEvent: 'input.type',
+      scrollIntoView: true,
+    },
+  )
+}
 
 /** Finish an existing block-opening gesture in Live Preview. Source mode keeps
  * literal fence entry. Existing content is kept outside the completed block.
@@ -100,7 +166,10 @@ export const liveMarkdownInput = Prec.high([
       key: 'Enter',
       run(view) {
         if (view.compositionStarted) return false
-        const transaction = blockOpeningTransaction(view.state)
+        const transaction =
+          blockOpeningTransaction(view.state) ??
+          punctuationNewline(view.state) ??
+          paragraphBreakTransaction(view.state)
         if (!transaction) return false
         view.dispatch(transaction)
         // Record the interior caret in native selection history. Otherwise redo

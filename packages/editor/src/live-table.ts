@@ -20,6 +20,7 @@ import {
   tableRowInsertion,
   tableSourceCells,
 } from './live-table-source'
+import { markdownFormatting } from './markdown-format'
 import { punctuationAction, punctuationInput } from './punctuation'
 import { sourceSyntax } from './syntax'
 
@@ -225,6 +226,7 @@ export class LiveTable {
         extensions: [
           sourceSyntax,
           punctuationInput,
+          markdownFormatting(false),
           syntaxHighlighting(codeHighlightStyle),
           syntaxHighlighting(cellHighlightStyle),
           drawSelection(),
@@ -319,7 +321,11 @@ export class LiveTable {
                 : 'select',
               annotations: update.transactions.flatMap((transaction) => {
                 const action = transaction.annotation(punctuationAction)
-                return action ? [punctuationAction.of(action)] : []
+                const isolation = transaction.annotation(isolateHistory)
+                return [
+                  ...(action ? [punctuationAction.of(action)] : []),
+                  ...(isolation ? [isolateHistory.of(isolation)] : []),
+                ]
               }),
             })
             if (padding)

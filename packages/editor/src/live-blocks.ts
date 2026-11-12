@@ -3,7 +3,7 @@ import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemir
 import { unclosedCodeFence } from './fenced-code'
 import { editingBlock } from './live-editing'
 import { activateRendered } from './live-interactions'
-import { preserveProseLineBreaks } from './live-line-breaks'
+import { preserveProseWhitespace } from './live-line-breaks'
 import {
   blockSourceRange,
   inlineProjection,
@@ -274,7 +274,7 @@ export class RenderedWidget extends WidgetType {
         this.options.render(content, this.block, lifetime.signal, () => {
           if (!lifetime.signal.aborted) view.requestMeasure()
         })
-      if (proseProjection(this.block.kind)) preserveProseLineBreaks(content)
+      if (proseProjection(this.block.kind)) preserveProseWhitespace(content)
       if (proseProjection(this.block.kind))
         for (const diagram of content.querySelectorAll<HTMLElement>(
           '[data-render-kind="diagram"]',
