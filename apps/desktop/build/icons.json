@@ -1,7 +1,7 @@
 {
   "sourceSha256": "716566e6995402182842523d2b8626fe71cfffb2bb56e49364f82b0f9bc113b7",
   "generatorSha256": "28f82b92e246774fc48d33beb78a127cf63aebd63d5db8e6533c206cdec5f69d",
-  "electronBuilderVersion": "26.15.3",
+  "electronBuilderVersion": "26.18.0",
   "files": [
     {
       "path": "icon.ico",
@@ -10,8 +10,8 @@
     },
     {
       "path": "icon.icns",
-      "bytes": 291174,
-      "sha256": "6c74fd27621d5f03e77801ea47cce65049a5d295ee1667e19ed6823343eef653"
+      "bytes": 243382,
+      "sha256": "e94d1a9b3b342223420417a20e2b946024da7fb76918e9b13e8a2e4eea67ea07"
     },
     {
       "path": "icons/128x128.png",

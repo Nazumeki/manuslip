@@ -32,6 +32,6 @@
     "mdast-util-to-hast": "13.2.1"
   },
   "devDependencies": {
-    "hast-util-from-html": "2.0.3"
+    "hast-util-from-html": "2.1.0"
   }
 }
