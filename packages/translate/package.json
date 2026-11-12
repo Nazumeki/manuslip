@@ -1,6 +1,6 @@
 {
   "name": "@manuslip/translate",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "exports": {
@@ -8,6 +8,6 @@
     "./transport": "./src/transport.ts"
   },
   "dependencies": {
-    "@manuslip/core": "0.1.1"
+    "@manuslip/core": "0.1.2"
   }
 }
