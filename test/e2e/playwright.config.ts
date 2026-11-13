@@ -1,6 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from '@playwright/test'
 
+export const fixtureSpecs = ['**/indexed-reading.spec.ts', '**/widget-lifetime.spec.ts']
+
 export default defineConfig({
   testDir: '.',
   grepInvert: /@pandoc/,

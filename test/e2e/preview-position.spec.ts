@@ -15,7 +15,7 @@ const source = [
   'End.',
 ].join('\n\n')
 
-/** Click the trailing half of a glyph, as a user would, without setting selection. */
+/** A glyph position relative to its locator, so click can wait for current layout. */
 async function textPoint(locator: Locator, text: string, offset: number) {
   await locator.scrollIntoViewIfNeeded()
   return locator.evaluate(
@@ -35,7 +35,8 @@ async function textPoint(locator: Locator, text: string, offset: number) {
         range.setStart(node, remaining - 1)
         range.setEnd(node, remaining)
         const box = range.getBoundingClientRect()
-        return { x: box.right - 0.1, y: box.top + box.height / 2 }
+        const origin = element.getBoundingClientRect()
+        return { x: box.right - origin.left - 0.1, y: box.top - origin.top + box.height / 2 }
       }
       throw new Error(`Missing rendered text: ${text}`)
     },
@@ -70,19 +71,22 @@ test('wide table edits retain horizontal scroll, layout and the focused cell on 
     const left = await scroll.evaluate((element) => element.scrollLeft)
     expect(left).toBeGreaterThan(0)
     const point = await textPoint(table.locator('td').last().locator('strong'), 'value8', 3)
-    await page.mouse.click(point.x, point.y)
+    await table.locator('td').last().locator('strong').click({ position: point })
     await expect(cell).toBeFocused()
     const layout = await table.locator('table').boundingBox()
+    if (!layout) throw new Error('Missing table layout before editing')
     await page.keyboard.insertText('X')
     await cell.press(`${modifier}+s`)
     await expect.poll(() => readFile(path, 'utf8')).toBe(source.replace('value8', 'valXue8'))
     await expect(table.locator('td').last()).toContainText('valXue8')
     await expect(cell).toBeFocused()
-    expect(await scroll.evaluate((element) => element.scrollLeft)).toBeCloseTo(left, 0)
-    expect((await table.locator('table').boundingBox())?.width).toBeCloseTo(layout?.width ?? 0, 0)
+    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeCloseTo(left, 0)
+    await expect
+      .poll(async () => (await table.locator('table').boundingBox())?.width ?? 0)
+      .toBeCloseTo(layout.width, 0)
     await cell.press('Escape')
     await expect(cell).toHaveCount(0)
-    expect(await scroll.evaluate((element) => element.scrollLeft)).toBeCloseTo(left, 0)
+    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeCloseTo(left, 0)
     const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
     await expect(editor).toBeFocused()
     await page.keyboard.insertText('Y')
@@ -213,7 +217,7 @@ for (const width of [1144, 420]) {
           (element) => element.closest('.cm-editor')?.querySelector('.cm-scroller')?.scrollTop ?? 0,
         )
         if (scenario.target.startsWith('.md-emoji')) await target.click()
-        else await page.mouse.click(point.x, point.y)
+        else await target.click({ position: point })
         await expect(cell).toBeFocused()
         await expect(editor).toHaveAttribute('data-parent-focus-count', '0')
         expect(
@@ -258,7 +262,7 @@ for (const width of [1144, 420]) {
         BrowserWindow.getAllWindows()[0]?.webContents.setZoomFactor(1.25)
       })
       const zoomed = await textPoint(table.locator('strong'), 'alpha same alpha', 13)
-      await page.mouse.click(zoomed.x, zoomed.y)
+      await table.locator('strong').click({ position: zoomed })
       await expect(cell).toBeFocused()
       await page.keyboard.insertText('X')
       await cell.press(`${modifier}+s`)
@@ -273,7 +277,7 @@ for (const width of [1144, 420]) {
 
       const code = page.locator('.cm-live-code pre code')
       const point = await textPoint(code, 'const second', 8)
-      await page.mouse.click(point.x, point.y)
+      await code.click({ position: point })
       await expect(editor).toBeFocused()
       await page.keyboard.insertText('X')
       await editor.press(`${modifier}+s`)
@@ -298,7 +302,7 @@ for (const width of [1144, 420]) {
       await editor.press('Escape')
       const list = page.locator('.cm-live-list')
       const listPoint = await textPoint(list, 'Another label', 3)
-      await page.mouse.click(listPoint.x, listPoint.y)
+      await list.click({ position: listPoint })
       await expect(editor).toBeFocused()
       await page.keyboard.insertText('X')
       await editor.press(`${modifier}+s`)

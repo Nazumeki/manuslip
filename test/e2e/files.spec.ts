@@ -2,7 +2,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type ElectronApplication, expect, test } from '@playwright/test'
-import { clickDocumentAction, contrast, launchDesktop } from './helpers'
+import { clickDocumentAction, contrast, launchDesktop, selectEditorMode } from './helpers'
 
 async function chooseOpen(application: ElectronApplication, path: string): Promise<void> {
   await application.evaluate(({ dialog }, selected) => {
@@ -216,7 +216,7 @@ test('inactive files autosave and reload; reopening activates the existing tab a
     const page = await application.firstWindow()
     await chooseOpen(application, path)
     await page.getByRole('button', { name: 'Open file…', exact: true }).first().click()
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    await selectEditorMode(page, 'Source')
     const editor = page.getByRole('textbox', { name: 'Markdown source' })
     await editor.focus()
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+End' : 'Control+End')

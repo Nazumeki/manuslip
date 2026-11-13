@@ -37,6 +37,7 @@ retried with `npm install`; unknown dependency contents require reviewing the pa
 | `npm run test:packaging` | Dependency installation, release and platform launcher checks |
 | `npm run build:app` | Build application assets for Electron E2E |
 | `npm run test:e2e` | Run workflows against existing assets |
+| `npm run test:e2e:fixtures` | Run source-built browser fixtures without packaging |
 | `npm run build` | Build assets and unsigned native installers |
 | `npm run test:packaged` | Run workflows against the unpacked application |
 | `npm run test:performance` | Run hardware-dependent packaged performance gates |
@@ -95,7 +96,8 @@ the resulting behavior and relevant verification in the PR. Run `npm run check` 
 affected tests; CI runs source, unit/integration/packaging checks and builds application
 assets on Linux x64, Windows x64 and macOS x64/arm64. The manual Pandoc and Packaged
 desktop workflows run real Pandoc conversions/exports and packaged desktop/Windows
-installer checks on the same targets. Dependency security runs separately on Linux
-and also runs daily. Run the manual workflows before release; see
+installer checks on the same targets. Source-built browser fixtures run in their own
+CI jobs. Dependency security runs separately on Linux and also runs daily.
+Run the manual workflows before release; see
 [testing](docs/testing/testing.md).
 A maintainer review is required before merge. Contributions use the [MIT license](LICENSE).

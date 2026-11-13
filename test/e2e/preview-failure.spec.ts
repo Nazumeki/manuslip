@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchDesktop } from './helpers'
+import { launchDesktop, selectEditorMode } from './helpers'
 
 test('repeated worker failure falls back to Source without losing editing or undo', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'manuslip-worker-failure-'))
@@ -101,10 +101,12 @@ test('unavailable diagnostic measurements preserve healthy preview work and late
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Home' : 'Control+Home')
     await expect(page.locator('.cm-live-strong')).toHaveText('Preview remains available.')
     await expect(page.getByText('4 words', { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    const source = page.getByRole('button', { name: 'Source', exact: true })
+    await source.click()
+    await expect(source).toHaveAttribute('aria-pressed', 'true')
     await editor.fill('# Changed\n\n**Latest revision renders.**')
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Home' : 'Control+Home')
-    await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
+    await selectEditorMode(page, 'Live Preview')
     await expect(page.locator('.cm-live-strong')).toHaveText('Latest revision renders.')
     await expect(page.getByText('4 words', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Retry preview', exact: true })).toHaveCount(0)

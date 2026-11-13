@@ -10,7 +10,7 @@ async function clickBelow(page: Page) {
   const scroller = page.locator('.cm-editor[data-mode="live"] > .cm-scroller')
   const box = await scroller.boundingBox()
   if (!box) throw new Error('Missing editor scroller')
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8)
+  await scroller.click({ position: { x: box.width / 2, y: box.height - 8 } })
 }
 
 for (const mode of [
@@ -51,6 +51,9 @@ for (const mode of [
         await page.keyboard.press(`${modifier}+a`)
       }
       if (mode === 'scrolled') {
+        await expect(
+          page.getByRole('button', { name: /^\d+ words · Document details$/ }),
+        ).toBeVisible()
         const scroller = page.locator('.cm-editor[data-mode="live"] > .cm-scroller')
         await scroller.evaluate((element) => {
           element.scrollTop = element.scrollHeight
@@ -58,6 +61,7 @@ for (const mode of [
         await expect
           .poll(() => scroller.evaluate((element) => element.scrollTop))
           .toBeGreaterThan(0)
+        await expect(page.locator('.cm-live-code pre')).toHaveText('body')
       }
       await clickBelow(page)
       await page.keyboard.press(`${modifier}+s`)
@@ -78,6 +82,7 @@ for (const mode of [
           await page.locator('.cm-editor[data-mode="live"] > .cm-scroller').evaluate((element) => {
             element.scrollTop = element.scrollHeight
           })
+          await expect(page.locator('.cm-live-code pre')).toHaveText('body')
         }
         await clickBelow(page)
       }

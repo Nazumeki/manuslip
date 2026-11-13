@@ -140,8 +140,9 @@ test('translated-preview shortcut finishes native composition before hiding sour
     await expect(translated).toBeFocused()
     await page.keyboard.press('Tab')
     // The mode controls share the application toolbar, followed by Save.
-    await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeFocused()
-    await page.keyboard.press(`${modifier}+1`)
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true })
+    await expect(saveButton).toBeFocused()
+    await saveButton.press(`${modifier}+1`)
     await expect(editor).toBeFocused()
     await save(source, `${original}世界`)
     await editor.press(`${modifier}+z`)

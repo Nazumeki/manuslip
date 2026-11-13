@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, type Page, test } from '@playwright/test'
-import { launchDesktop } from './helpers'
+import { launchDesktop, selectEditorMode } from './helpers'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 
@@ -38,7 +38,7 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} keeps selected loose-list content when indenting and undoing`, async () => {
     const source = '- one\n\n- two'
     await fixture(source, async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+a`)
       await page.keyboard.press('Tab')
@@ -51,7 +51,7 @@ for (const mode of ['Source', 'Live Preview']) {
   })
   test(`${mode} toggles bold and italic without losing the selection or undo`, async () => {
     await fixture('alpha', async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+a`)
       await page.keyboard.press(`${modifier}+b`)
@@ -78,7 +78,7 @@ for (const mode of ['Source', 'Live Preview']) {
 
   test(`${mode} formats paragraphs separately and preserves unselected emphasis`, async () => {
     await fixture('alpha\n\nbeta', async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+a`)
       await page.keyboard.press(`${modifier}+b`)
@@ -100,11 +100,13 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} retains list and quote markers when removing a code fence`, async () => {
     const source = '> - ```\n>   alpha\n>   ```'
     await fixture(source, async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
-      await editor.press(`${modifier}+End`)
-      await page.keyboard.press('ArrowUp')
-      await page.keyboard.press('End')
+      if (mode === 'Live Preview') await editor.locator('pre > code').click()
+      const line = editor.locator('.cm-line').filter({ hasText: '>   alpha' })
+      await expect(line).toBeVisible()
+      await line.click()
+      await editor.press('End')
       await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Alt+c' : 'Control+Shift+k')
       await saved(page, path, '> - alpha')
       await page.keyboard.type(' beta')
@@ -114,7 +116,7 @@ for (const mode of ['Source', 'Live Preview']) {
 
   test(`${mode} creates a code block with the formatting shortcut and preserves its content`, async () => {
     await fixture('alpha', async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
       const shortcut = process.platform === 'darwin' ? 'Meta+Alt+c' : 'Control+Shift+k'
@@ -135,7 +137,7 @@ for (const mode of ['Source', 'Live Preview']) {
 
   test(`${mode} indents and outdents list items from the text caret`, async () => {
     await fixture('- parent\n- child', async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
       await page.keyboard.press('Tab')
@@ -156,7 +158,7 @@ for (const mode of ['Source', 'Live Preview']) {
 
   test(`${mode} distinguishes paragraph and line breaks according to the editing mode`, async () => {
     await fixture('alpha', async (page, path) => {
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
       await page.keyboard.press('Enter')
@@ -194,9 +196,8 @@ for (const mode of ['Source', 'Live Preview']) {
       await page.keyboard.type('next')
       await saved(page, path, '- item\n- next')
       await editor.fill('```\nalpha\n```')
-      await editor.press(`${modifier}+Home`)
-      await page.keyboard.press('ArrowDown')
-      await page.keyboard.press('End')
+      await editor.getByText('alpha', { exact: true }).click()
+      await editor.press('End')
       await page.keyboard.press('Enter')
       await page.keyboard.type('beta')
       await saved(page, path, '```\nalpha\nbeta\n```')

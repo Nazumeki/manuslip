@@ -34,10 +34,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run verify:package
-      - name: Packaged workflows (Linux)
+      - name: Packaged application workflows (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run test:packaged
-      - name: Packaged workflows (Windows and macOS)
+      - name: Packaged application workflows (Windows and macOS)
         if: runner.os != 'Linux'
         run: npm run test:packaged
       - name: Windows install and uninstall

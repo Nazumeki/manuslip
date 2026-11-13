@@ -40,6 +40,41 @@ jobs:
 
       - run: npm run audit:dependencies
 
+  browser-fixtures:
+    name: Browser fixtures (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-15-intel, macos-15]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm run check:lockfile
+      - run: npm ci --no-audit --no-fund
+      - name: Source fixtures (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:e2e:fixtures
+      - name: Source fixtures (Windows and macOS)
+        if: runner.os != 'Linux'
+        run: npm run test:e2e:fixtures
+      - name: Retain fixture evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: browser-fixtures-failure-${{ matrix.os }}
+          path: test/e2e/result/
+          if-no-files-found: ignore
+          retention-days: 7
+
   verify:
     name: Verify (${{ matrix.os }})
     if: github.event_name != 'schedule'

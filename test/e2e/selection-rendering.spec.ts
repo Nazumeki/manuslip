@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type ElectronApplication, expect, type Locator, type Page, test } from '@playwright/test'
-import { launchDesktop } from './helpers'
+import { launchDesktop, selectEditorMode } from './helpers'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 const source = 'prefix alpha beta\nshort\n\nfourth final tail\nlast unselected'
@@ -37,13 +37,14 @@ async function workspace(
 
 async function selectLines(editor: Locator, backward: boolean) {
   await editor.press(`${modifier}+Home`)
-  if (backward) {
-    for (let index = 0; index < 3; index++) await editor.press('Shift+ArrowDown')
-    await editor.press('ArrowRight')
-  }
+  const length = 'refix alpha beta\nshort\n\nf'.length
   await editor.press('ArrowRight')
-  for (let index = 0; index < 3; index++)
-    await editor.press(backward ? 'Shift+ArrowUp' : 'Shift+ArrowDown')
+  if (backward) {
+    for (let index = 0; index < length; index++) await editor.press('ArrowRight')
+  }
+  // Vertical movement follows visual columns, which differ with proportional fonts.
+  for (let index = 0; index < length; index++)
+    await editor.press(backward ? 'Shift+ArrowLeft' : 'Shift+ArrowRight')
 }
 
 async function checkPaint(page: Page, application: ElectronApplication) {
@@ -229,7 +230,7 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} preserves exact mouse selections, multiple cursors and undo`, async () => {
     await workspace(async (page, _application, editor) => {
       await editor.fill('Start alpha beta gamma tail\ntoken keep token')
-      await page.getByRole('button', { name: mode, exact: true }).click()
+      await selectEditorMode(page, mode)
       const points = await editor
         .locator('.cm-line')
         .first()

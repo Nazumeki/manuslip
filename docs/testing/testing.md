@@ -10,8 +10,9 @@ Run commands from the repository root.
 | Real Pandoc conversions | `apps/desktop/test/integration/main/pandoc/converter-native.test.ts` | `npm run test:pandoc` |
 | Patch installation/equivalence, release and Linux launcher | `test/packaging/` | `npm run test:packaging` |
 | Desktop workflows | `test/e2e/` | `npm run build:app`, then `npm run test:e2e` |
+| Source-built browser fixtures | `test/e2e/indexed-reading.spec.ts`, `test/e2e/widget-lifetime.spec.ts` | `npm run test:e2e:fixtures` |
 | Real Pandoc desktop exports | `test/e2e/pandoc*.spec.ts` | `npm run build:app`, then `npm run test:pandoc:e2e` |
-| Packaged workflows | `test/e2e/` | `npm run build`, then `npm run test:packaged` |
+| Packaged application workflows | `test/e2e/`, excluding source-built fixtures | `npm run build`, then `npm run test:packaged` |
 | Packaged runtime hardening | `test/packaging/hardened-smoke.mjs` | `npm run verify:package`, then `node test/packaging/hardened-smoke.mjs` |
 | Performance and resource gates | `test/benchmark/` | `npm run test:performance` |
 | Main-process source performance gates | `test/benchmark/search.spec.ts`, `test/benchmark/workspace.spec.ts`, `test/benchmark/resources.spec.ts` | `npm run test:performance:main` |
@@ -53,6 +54,13 @@ HTTP fixtures bind to an ephemeral loopback port, close their connections at tea
 report asynchronous handler failures to the owning test. Tests use isolated profiles and
 temporary files. Set `MANUSLIP_PACKAGED_EXECUTABLE` to select another executable for desktop workflows.
 Headless Linux Electron tests need Xvfb.
+
+The packaged config requires an explicit executable, and the shared desktop launcher
+checks that it is a packaged application loading `app.asar` through `manuslip-app:`.
+It excludes the two suites that build their own Vite/Electron fixture applications;
+CI runs those separately on all four platforms with `npm run test:e2e:fixtures`.
+The packaging suite checks actual Playwright discovery so every common desktop case
+belongs to exactly one of the packaged application and source fixture suites.
 
 Canonicalize temporary workspace/session roots with `realpath` after `mkdtemp`, before
 deriving child paths or authorization grants. macOS temporary roots can pass through
@@ -181,6 +189,8 @@ CI runs verification on Linux x64, Windows x64 and macOS x64/arm64. Each verify 
 validates the lockfile before `npm ci`, then runs `npm run check`, `npm run test:unit`,
 `npm run test:integration`, `npm run test:packaging` and `npm run build:app`.
 Each verify job also runs the missing/invalid Pandoc UI workflow without installing Pandoc.
+Separate Browser fixtures jobs run the source-built reading and widget fixtures on the
+same matrix, without building installers or loading those fixtures into the packaged suite.
 The CI unit command adds `--maxWorkers=2 --reporter=dot`: fewer simultaneous dense
 fixtures leave CPU/memory headroom, and failed corpus cases do not expand every passing
 example in the log. Verify jobs have a 25-minute ceiling covering installation, all
@@ -197,7 +207,8 @@ same four-platform matrix independently of CI, including release-triggered CI.
 The Pandoc workflow installs Pandoc 3.13, selects its absolute executable path, runs
 `npm run test:pandoc`, builds the app and runs `npm run test:pandoc:e2e`.
 The Packaged desktop workflow builds unsigned installers, verifies runtime fuses and
-runs the full common desktop E2E suite. Windows also runs installation and uninstallation
+runs the application E2E suite against the built package. Source-built fixture applications
+run in CI instead. Windows also runs installation and uninstallation
 checks. Failed packaged jobs retain test evidence for seven days. Linux desktop tests
 use Xvfb in all workflows.
 

@@ -275,6 +275,54 @@ test('reused HTML and math previews resolve source positions after edits before 
   }
 })
 
+for (const action of ['waiting', 'another control', 'typing'] as const) {
+  test(`HTML output focus follows Escape and respects ${action} while rendering is pending`, async () => {
+    const fixture = await setup()
+    try {
+      const { page } = fixture
+      const source = '<div><b>Original</b></div>\n\nAfter'
+      await page.evaluate((text) => window.previewLifetime.setSource(text), source)
+      await page.evaluate(() => window.previewLifetime.owned())
+      const output = page.locator('.cm-live-html:not(.cm-live-edit-preview)')
+      const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
+      await output.focus()
+      await output.press('Enter')
+      await expect(editor).toBeFocused()
+      await page.evaluate(
+        (at) => window.previewLifetime.select([[at, at]]),
+        source.indexOf('Original'),
+      )
+      await page.keyboard.insertText('Q')
+      await editor.press('Escape')
+      await expect(output).toHaveCount(0)
+      if (action === 'another control') {
+        await page.evaluate(() => {
+          const button = document.createElement('button')
+          button.textContent = 'Another control'
+          document.body.prepend(button)
+        })
+        await page.getByRole('button', { name: 'Another control', exact: true }).click()
+      } else if (action === 'typing') await page.keyboard.insertText('Continued')
+      await page.evaluate(() => window.previewLifetime.owned())
+      if (action !== 'typing') await expect(output).toContainText('QOriginal')
+      if (action === 'waiting') await expect(output).toBeFocused()
+      else if (action === 'another control')
+        await expect(
+          page.getByRole('button', { name: 'Another control', exact: true }),
+        ).toBeFocused()
+      else {
+        await expect(editor).toBeFocused()
+        expect(await page.evaluate(() => window.previewLifetime.snapshot().text)).toContain(
+          'Continued',
+        )
+      }
+      expect(fixture.errors).toEqual([])
+    } finally {
+      await fixture.close()
+    }
+  })
+}
+
 test('HTML editing releases its renderer and preserves teardown ownership without a preview panel', async () => {
   const fixture = await setup()
   try {

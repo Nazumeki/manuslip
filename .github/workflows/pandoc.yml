@@ -68,3 +68,12 @@ jobs:
       - name: Pandoc desktop exports (Windows and macOS)
         if: runner.os != 'Linux'
         run: npm run test:pandoc:e2e
+
+      - name: Retain test evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: pandoc-failure-${{ matrix.os }}
+          path: test/e2e/result/
+          if-no-files-found: ignore
+          retention-days: 7

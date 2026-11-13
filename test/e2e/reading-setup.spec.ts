@@ -71,8 +71,39 @@ test('reading setup reveals provider settings and sends prose only after Transla
     await panel.getByLabel('Target language', { exact: true }).fill('fr')
     await panel.getByRole('button', { name: 'Save translation settings', exact: true }).click()
     await expect(panel.getByText('Translation settings saved.', { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Set up translation', exact: true, includeHidden: true }),
+    ).toHaveCount(0)
+    const state = await page.evaluate(() => window.manuslip.translationState())
+    if (!state.ok) throw new Error('Missing saved translation state')
+    // Keep the reader's controls disabled until after the dialog has closed.
+    await application.evaluate(
+      ({ ipcMain, BrowserWindow }, { channels, state }) => {
+        const probe = { pending: [] as (() => void)[], released: false }
+        Object.assign(globalThis, { savedSettingsProbe: probe })
+        ipcMain.removeHandler(channels.state)
+        ipcMain.handle(channels.state, () => {
+          if (probe.released) return state
+          return new Promise((resolve) => probe.pending.push(() => resolve(state)))
+        })
+        BrowserWindow.getAllWindows()[0]?.webContents.send(channels.changed)
+      },
+      { channels: translationChannels, state },
+    )
+    await expect(page.getByRole('button', { name: 'Translate', exact: true })).toBeDisabled()
     await page.keyboard.press('Escape')
+    await expect(page.locator('.preferences-dialog')).not.toBeVisible()
     const translate = page.getByRole('button', { name: 'Translate', exact: true })
+    await expect(translate).toBeDisabled()
+    await application.evaluate(() => {
+      const probe = (
+        globalThis as unknown as {
+          savedSettingsProbe: { pending: (() => void)[]; released: boolean }
+        }
+      ).savedSettingsProbe
+      probe.released = true
+      for (const resolve of probe.pending) resolve()
+    })
     await expect(translate).toBeFocused()
     await expect(translate).toBeEnabled()
     await expect(page.getByLabel('Read in', { exact: true })).toHaveValue('fr')

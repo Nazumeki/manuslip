@@ -100,6 +100,8 @@ async function withPendingInput(
       await page.getByRole('tab').first().click()
       await expect(editor).toContainText('Keep this text.')
     }
+    // Finish preview setup before deliberately suspending native input delivery.
+    await expect(page.getByText('Updating preview…', { exact: true })).toHaveCount(0)
     await editor.focus()
     await expect(page.locator('.cm-editor')).toHaveClass(/cm-focused/)
     await page.evaluate(() => {

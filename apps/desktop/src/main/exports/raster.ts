@@ -73,5 +73,7 @@ export async function captureRaster(
   } catch {
     throw new FileOperationError('export-image-limit')
   }
+  if (dimensions.width !== size.pixelWidth || dimensions.height !== size.pixelHeight)
+    throw new FileOperationError('export-render')
   return format === 'png' ? image.toPNG() : image.toJPEG(rasterLimits.jpegQuality)
 }

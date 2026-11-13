@@ -25,11 +25,20 @@ import { punctuationAction, punctuationInput } from './punctuation'
 import { sourceSyntax } from './syntax'
 
 const activeTables = new WeakMap<EditorView, LiveTable>()
+// A changed table can be absent from the model until its worker revision arrives.
+// Keep only the most recently closed table's viewport for that exact document.
+const pendingScroll = new WeakMap<
+  EditorView,
+  { doc: EditorState['doc']; from: number; left: number }
+>()
 
 export const tableEditing = ViewPlugin.define(() => ({
   update(update) {
     const active = activeTables.get(update.view)
-    if (update.docChanged) active?.map(update.changes)
+    if (update.docChanged) {
+      active?.map(update.changes)
+      pendingScroll.delete(update.view)
+    }
     if (
       update.docChanged ||
       update.selectionSet ||
@@ -62,6 +71,22 @@ export class LiveTable {
     private readonly signal: AbortSignal,
   ) {
     this.render()
+    const pending = pendingScroll.get(view)
+    if (pending?.doc === view.state.doc && pending.from === block.from)
+      view.requestMeasure({
+        read: () => this.content.querySelector('.render-table-scroll'),
+        write: (scroll) => {
+          if (
+            !scroll ||
+            this.signal.aborted ||
+            pendingScroll.get(view) !== pending ||
+            pending.doc !== view.state.doc
+          )
+            return
+          scroll.scrollLeft = pending.left
+          pendingScroll.delete(view)
+        },
+      })
     container.addEventListener(
       'mousedown',
       (event) => {
@@ -186,6 +211,7 @@ export class LiveTable {
   private open(row: number, column: number, event?: MouseEvent): void {
     const cell = this.cells()[row]?.[column]
     if (!cell) return
+    pendingScroll.delete(this.view)
     if (this.editor && this.cell?.row === row && this.cell.column === column) {
       if (event) {
         const bounds = this.editor.contentDOM.getBoundingClientRect()
@@ -507,7 +533,14 @@ export class LiveTable {
   }
 
   private finish(backward = false): void {
+    const scroll = this.content.querySelector('.render-table-scroll')
+    const left = scroll?.scrollLeft ?? 0
     const editing = editingBlock(this.view.state)
+    pendingScroll.set(this.view, {
+      doc: this.view.state.doc,
+      from: editing?.block.from ?? this.block.from,
+      left,
+    })
     const edge = backward ? (editing?.from ?? this.block.from) : (editing?.to ?? this.block.to)
     // A replacement block has no native text caret. Use its neighboring line,
     // so the browser cannot reinterpret a boundary caret on the opposite side.
@@ -516,7 +549,15 @@ export class LiveTable {
       effects: editLiveBlock.of(null),
       selection: EditorSelection.create([EditorSelection.cursor(at, backward ? -1 : 1)]),
     })
+    // Remove the child selection before focusing its parent. Deferred cleanup can
+    // otherwise let the browser reveal the old cell and reset horizontal scroll.
+    this.synchronize()
     this.view.focus()
+    const restored = this.content.querySelector('.render-table-scroll')
+    if (this.container.isConnected && restored) {
+      restored.scrollLeft = left
+      pendingScroll.delete(this.view)
+    }
   }
 
   private destroy(): void {
@@ -525,6 +566,8 @@ export class LiveTable {
   }
 
   private closeCell(keepCells = false): void {
+    const scroll = this.content.querySelector('.render-table-scroll')
+    const left = scroll?.scrollLeft ?? 0
     if (!keepCells) this.sourceCells = undefined
     const target = this.cell && this.element(this.cell.row, this.cell.column)
     if (target && this.cellContent) {
@@ -536,6 +579,8 @@ export class LiveTable {
     this.unregister?.()
     this.editor = null
     this.cell = null
+    // Restoring native cell contents can reset an ancestor's scroll position.
+    if (scroll) scroll.scrollLeft = left
     if (activeTables.get(this.view) === this) activeTables.delete(this.view)
   }
 }

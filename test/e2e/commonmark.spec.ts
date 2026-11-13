@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { type ElectronApplication, expect, type Page, test } from '@playwright/test'
-import { clickDocumentAction, launchDesktop } from './helpers'
+import { clickDocumentAction, launchDesktop, selectEditorMode } from './helpers'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 
@@ -75,10 +75,10 @@ test('CommonMark code blocks render with exact literal content and optional high
       },
     ]
     for (const [index, example] of cases.entries()) {
-      await page.getByRole('button', { name: 'Source', exact: true }).click()
+      await selectEditorMode(page, 'Source')
       await editor.fill(example.source)
       await editor.press(`${modifier}+End`)
-      await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
+      await selectEditorMode(page, 'Live Preview')
       const code = editor.locator('pre > code')
       if (example.unfinished) {
         await expect(code).toHaveCount(0)
@@ -99,13 +99,13 @@ test('CommonMark code blocks render with exact literal content and optional high
         await editor.press('Escape')
         await expect(code).toHaveCount(1)
       }
-      await page.getByRole('button', { name: 'Source', exact: true }).click()
+      await selectEditorMode(page, 'Source')
       await expect
         .poll(async () => (await editor.locator('.cm-line').allTextContents()).join('\n'))
         .toBe(example.source)
     }
     await editor.fill(cases[0]?.source ?? '')
-    await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
+    await selectEditorMode(page, 'Live Preview')
     await page.setViewportSize({ width: 420, height: 900 })
     await expect(editor.locator('pre > code')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -118,7 +118,7 @@ test('indented code source can be selected, edited, undone, saved and exported w
     '    const message = "<tag> &amp; **literal**";\r\n      indented\tend\r\n\r\nTail\r\n'
   await withDocument(source, async (page, application, path, directory) => {
     const editor = page.getByRole('textbox', { name: 'Markdown source' })
-    await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
+    await selectEditorMode(page, 'Live Preview')
     await expect(editor.locator('pre > code')).toHaveCount(1)
     await editor.locator('pre > code').click()
     const selected = await page.evaluate(() => getSelection()?.toString())
@@ -129,7 +129,7 @@ test('indented code source can be selected, edited, undone, saved and exported w
     await expect(editor.locator('pre > code')).toHaveCount(0)
     await editor.press('Escape')
     await expect(editor.locator('pre > code')).toHaveCount(1)
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    await selectEditorMode(page, 'Source')
     await editor.press(`${modifier}+Home`)
     await page.keyboard.insertText('    added\n')
     await page.keyboard.press(`${modifier}+s`)
@@ -137,7 +137,7 @@ test('indented code source can be selected, edited, undone, saved and exported w
     await editor.press(`${modifier}+z`)
     await page.keyboard.press(`${modifier}+s`)
     await expect.poll(() => readFile(path, 'utf8')).toBe(source)
-    await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
+    await selectEditorMode(page, 'Live Preview')
     await expect(editor.locator('pre > code')).toHaveText(
       'const message = "<tag> &amp; **literal**";\n  indented\tend\n',
     )
@@ -160,7 +160,7 @@ test('ordered lists use CommonMark numbering and retain their original source ma
     '3. first\n1. second\n9. third\n\n0) zero\n0) one\n\n- Outer\n\n  7. nested\n  1. next\n\nTail'
   await withDocument(source, async (page, application, path, directory) => {
     const editor = page.getByRole('textbox', { name: 'Markdown source' })
-    await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
+    await selectEditorMode(page, 'Live Preview')
     const lists = editor.locator('.cm-live-list')
     await expect(lists).toHaveCount(3)
     await expect(lists.nth(0).locator('ol')).toHaveAttribute('start', '3')
@@ -180,7 +180,7 @@ test('ordered lists use CommonMark numbering and retain their original source ma
     expect(html).toContain('<ol start="0">')
     expect(html).toContain('<ol start="7">')
     expect(await readFile(path, 'utf8')).toBe(source)
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    await selectEditorMode(page, 'Source')
     await expect
       .poll(async () => (await editor.locator('.cm-line').allTextContents()).join('\n'))
       .toBe(source)

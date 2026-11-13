@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type ElectronApplication, expect, test } from '@playwright/test'
 import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib'
-import { expectBundledCjk, expectCjkPdf } from './fonts'
+import { expectBundledCjkSamples, expectCjkPdf } from './fonts'
 import {
   clickDocumentAction,
   contrast,
@@ -93,11 +93,13 @@ test('self-contained HTML and PDF export preserve tables, Unicode, code, local i
     await expect(
       artifact.getByRole('heading', { name: '世界 — Export', exact: true }),
     ).toBeVisible()
-    await expectBundledCjk(artifact, 'article > h1', 2)
-    await expectBundledCjk(artifact, 'article > p:nth-of-type(2)', 12)
-    await expectBundledCjk(artifact, 'tbody td:nth-child(2)', 2)
-    await expectBundledCjk(artifact, 'pre code', 2)
-    await expectBundledCjk(artifact, '[data-export-kind="diagram"] text', 2)
+    await expectBundledCjkSamples(artifact, [
+      ['article > h1', 2],
+      ['article > p:nth-of-type(2)', 12],
+      ['tbody td:nth-child(2)', 2],
+      ['pre code', 2],
+      ['[data-export-kind="diagram"] text', 2],
+    ])
     await expect(artifact.locator('[data-export-kind="math"] svg')).toHaveCount(2)
     await expect(artifact.locator('[data-export-kind="diagram"] svg')).toContainText('Share')
     await expect

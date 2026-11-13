@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { expect, type Locator, type Page, test } from '@playwright/test'
+import { expect, type Locator, test } from '@playwright/test'
 import { launchDesktop } from './helpers'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
@@ -35,13 +35,13 @@ const source = [
   '',
 ].join('\n')
 
-async function clickToken(page: Page, math: Locator, from: number, to = from + 1): Promise<void> {
+async function clickToken(math: Locator, from: number, to = from + 1): Promise<void> {
   const token = math.locator(`[data-source-from="${from}"][data-source-to="${to}"]`).last()
   const box = await token.boundingBox()
   if (!box) throw new Error('Missing mapped equation token')
   // Stay on the right stroke of an x, so this is an actual glyph hit rather than
   // a synthetic event or a source-position attribute used to set the selection.
-  await page.mouse.click(box.x + box.width * 0.8, box.y + box.height * 0.25)
+  await token.click({ position: { x: box.width * 0.8, y: box.height * 0.25 } })
 }
 
 async function sourceCaret(raw: Locator): Promise<number> {
@@ -85,7 +85,7 @@ for (const { width, theme, zoom } of [
       await expect(math.locator('svg')).toBeVisible()
 
       for (const offset of [2, 4, inline.indexOf('}{x') + 2]) {
-        await clickToken(page, math, offset)
+        await clickToken(math, offset)
         await expect(editor).toBeFocused()
         await expect(raw).toHaveText(`$${inline}$`)
         await expect.poll(() => sourceCaret(raw)).toBe(offset + 2)
@@ -146,8 +146,8 @@ for (const { width, theme, zoom } of [
       await editor.press('Escape')
 
       const neighbor = editor.getByRole('math', { name: 'y_i^2', exact: true })
-      await clickToken(page, math, 4)
-      await clickToken(page, neighbor, 4)
+      await clickToken(math, 4)
+      await clickToken(neighbor, 4)
       await expect(raw).toHaveText('$y_i^2$')
       await expect.poll(() => sourceCaret(raw)).toBe(6)
       await page.screenshot({ path: test.info().outputPath(`latex-source-${width}.png`) })
@@ -158,7 +158,7 @@ for (const { width, theme, zoom } of [
       await editor.press(`${modifier}+z`)
 
       const padded = editor.getByRole('math', { name: 'p_i^2', exact: true })
-      await clickToken(page, padded, 4)
+      await clickToken(padded, 4)
       await page.keyboard.insertText('Q')
       await expect(
         preview.getByRole('math', { name: 'p_i^2Q', exact: true }).locator('svg'),
@@ -179,7 +179,7 @@ for (const { width, theme, zoom } of [
       const equation = editor.getByRole('math', { name: display, exact: true })
       await equation.scrollIntoViewIfNeeded()
       const denominator = display.lastIndexOf('}{x') + 2
-      await clickToken(page, equation, denominator)
+      await clickToken(equation, denominator)
       await expect(editor).toBeFocused()
       await expect(editor.locator('.cm-live-edit-source').filter({ hasText: 'g(x)' })).toBeVisible()
       await page.keyboard.insertText('Q')
@@ -197,7 +197,7 @@ for (const { width, theme, zoom } of [
         const rendered = editor.getByRole('math', { name: notation.value, exact: true })
         await rendered.scrollIntoViewIfNeeded()
         const offset = notation.value.lastIndexOf('2')
-        await clickToken(page, rendered, offset)
+        await clickToken(rendered, offset)
         if (notation.markup.includes('\\(')) await expect(raw).toHaveText(String.raw`\(a_1 + a_2\)`)
         await page.keyboard.insertText('Q')
         const changed = `${notation.value.slice(0, offset + 1)}Q${notation.value.slice(offset + 1)}`

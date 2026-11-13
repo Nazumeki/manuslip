@@ -33,7 +33,8 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           : kind === 'math'
             ? `$$\n${value}\n$$`
             : `\`\`\`mermaid\n${value}\n\`\`\``
-      const source = `${padding}${block}\n\n${padding}`
+      const anchor = 'Before the rendered block.'
+      const source = `${padding}${anchor}\n\n${block}\n\n${padding}`
       await mkdir(profile)
       await writeFile(
         join(profile, 'preferences.json'),
@@ -54,12 +55,21 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
         if (kind === 'html') {
           const extensions = await openMarkdownExtensions(page)
           await extensions.getByLabel('Render sanitized HTML', { exact: true }).check()
+          await expect(
+            extensions.getByLabel('Render sanitized HTML', { exact: true }),
+          ).toBeEnabled()
           await page.keyboard.press('Escape')
+          await expect(page.locator('.preferences-dialog')).not.toBeVisible()
         }
-        const scroller = page.locator('.cm-scroller')
-        await scroller.evaluate((element) => {
-          element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
-        })
+        await expect(page.locator('.preview-toolbar [role="status"]')).toHaveCount(0)
+        // Locate the block through its neighboring source, independent of virtual height estimates.
+        await editor.press(`${modifier}+f`)
+        const search = page.locator('.cm-search input[name="search"]')
+        await search.fill(anchor)
+        await search.press('Tab')
+        await page.locator('.cm-search button[name="next"]').click()
+        await expect(editor).toContainText(anchor)
+        await search.press('Escape')
         const rendered = page.locator(`.cm-live-${kind}:not(.cm-live-edit-preview)`)
         await rendered.scrollIntoViewIfNeeded()
         if (kind !== 'html') await expect(rendered.locator('svg')).toBeVisible()
@@ -183,6 +193,8 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           const panel = page.locator('.cm-live-preview-panel')
           await expect(panel).toBeVisible()
           if (size === 'tall') {
+            await expect(preview.locator('svg')).toBeVisible()
+            if (kind === 'diagram') await expect(preview.locator('svg')).toContainText('QSame')
             expect(
               await panel.evaluate((element) => element.scrollHeight > element.clientHeight),
             ).toBe(true)

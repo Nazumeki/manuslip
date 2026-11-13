@@ -4,6 +4,8 @@ import { expect, test } from '@playwright/test'
 import axe from 'axe-core'
 import { clickDocumentAction, contrast, launchDesktop } from './helpers'
 
+const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
+
 const source = `# Notes and references
 
 Good references stay close to the text.[^origin] A second citation[^detail] and a return to the original.[^origin]
@@ -86,7 +88,7 @@ for (const theme of ['light', 'dark'] as const) {
       ).toEqual([])
       for (const width of [480, 320]) {
         await page.setViewportSize({ width, height: 1100 })
-        await editor.press('Control+End')
+        await editor.press(`${modifier}+End`)
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
           true,
         )
@@ -108,12 +110,12 @@ for (const theme of ['light', 'dark'] as const) {
       await definition.click()
       await page.keyboard.press('End')
       await page.keyboard.type(' edited')
-      await page.keyboard.press('Control+z')
+      await page.keyboard.press(`${modifier}+z`)
       await page.getByRole('button', { name: 'Source', exact: true }).click()
       await expect(editor).toContainText(
         '[guide]: https://example.invalid/field-guide "Field guide"',
       )
-      await page.keyboard.press('Control+s')
+      await page.keyboard.press(`${modifier}+s`)
       expect(await readFile(path, 'utf8')).toBe(source)
       await page.getByRole('button', { name: 'Live Preview', exact: true }).click()
 

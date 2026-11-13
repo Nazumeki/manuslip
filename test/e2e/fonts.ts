@@ -10,6 +10,10 @@ import {
 
 /** Chromium reports the fonts that actually painted this node's text. */
 export async function platformFonts(page: Page, selector: string) {
+  return (await platformFontSamples(page, [selector]))[0] || []
+}
+
+async function platformFontSamples(page: Page, selectors: readonly string[]) {
   await page.evaluate(async () => {
     await document.fonts.ready
   })
@@ -18,33 +22,51 @@ export async function platformFonts(page: Page, selector: string) {
     await session.send('DOM.enable')
     await session.send('CSS.enable')
     const { root } = await session.send('DOM.getDocument')
-    const { nodeIds } = await session.send('DOM.querySelectorAll', {
-      nodeId: root.nodeId,
-      selector: `${selector}, ${selector} *`,
-    })
-    expect(nodeIds.length, selector).toBeGreaterThan(0)
-    // The CDP operation covers direct text children, including SVG tspans and
-    // CodeMirror's syntax spans; query each descendant rather than infer from CSS.
-    const results = await Promise.all(
-      nodeIds.map((nodeId) => session.send('CSS.getPlatformFontsForNode', { nodeId })),
+    return await Promise.all(
+      selectors.map(async (selector) => {
+        const { nodeIds } = await session.send('DOM.querySelectorAll', {
+          nodeId: root.nodeId,
+          selector: `${selector}, ${selector} *`,
+        })
+        expect(nodeIds.length, selector).toBeGreaterThan(0)
+        // The CDP operation covers direct text children, including SVG tspans and
+        // CodeMirror's syntax spans; query each descendant rather than infer from CSS.
+        const results = await Promise.all(
+          nodeIds.map((nodeId) => session.send('CSS.getPlatformFontsForNode', { nodeId })),
+        )
+        return results.flatMap((result) => result.fonts)
+      }),
     )
-    return results.flatMap((result) => result.fonts)
   } finally {
     await session.detach()
   }
 }
 
 export async function expectBundledCjk(page: Page, selector: string, minimumGlyphs: number) {
-  const fonts = await platformFonts(page, selector)
-  const count = fonts
-    .filter((font) => font.isCustomFont && font.familyName === 'Noto Sans CJK SC')
-    .reduce((sum, font) => sum + font.glyphCount, 0)
-  expect(count, JSON.stringify({ selector, fonts })).toBeGreaterThanOrEqual(minimumGlyphs)
-  await test.info().attach('font-usage', {
-    body: JSON.stringify({ selector, fonts, bundledGlyphs: count }),
-    contentType: 'application/json',
-  })
-  return fonts
+  return (await expectBundledCjkSamples(page, [[selector, minimumGlyphs]]))[0] || []
+}
+
+export async function expectBundledCjkSamples(
+  page: Page,
+  samples: readonly (readonly [selector: string, minimumGlyphs: number])[],
+) {
+  // Inspect one document once, including when the artifact embeds large font data.
+  const groups = await platformFontSamples(
+    page,
+    samples.map(([selector]) => selector),
+  )
+  for (const [index, [selector, minimumGlyphs]] of samples.entries()) {
+    const fonts = groups[index] || []
+    const count = fonts
+      .filter((font) => font.isCustomFont && font.familyName === 'Noto Sans CJK SC')
+      .reduce((sum, font) => sum + font.glyphCount, 0)
+    expect(count, JSON.stringify({ selector, fonts })).toBeGreaterThanOrEqual(minimumGlyphs)
+    await test.info().attach('font-usage', {
+      body: JSON.stringify({ selector, fonts, bundledGlyphs: count }),
+      contentType: 'application/json',
+    })
+  }
+  return groups
 }
 
 export function expectCjkPdf(pdf: PDFDocument, text: string) {

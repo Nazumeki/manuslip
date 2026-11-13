@@ -329,7 +329,7 @@ describe('whole-root grammar selection equals the complete Manuslip grammar', ()
       }
   })
 
-  it('matches full GFM trees and positions for seeded combinations of guarded syntax', () => {
+  describe('seeded combinations of guarded syntax', () => {
     const pieces = [
       'Prose',
       '**strong**',
@@ -356,14 +356,23 @@ describe('whole-root grammar selection equals the complete Manuslip grammar', ()
       seed ^= seed << 5
       return (seed >>> 0) % size
     }
-    for (let attempt = 0; attempt < 400; attempt++) {
+    const sources = Array.from({ length: 400 }, (_, attempt) => {
       const prose = Array.from({ length: 12 }, () => pieces[random(pieces.length)]).join(' ')
       const body = attempt % 3 === 0 ? `> ${prose}` : attempt % 3 === 1 ? `- [x] ${prose}` : prose
-      const source = `${body}\n\n[ref]: https://example.invalid/\n\n[^n]: Footnote.\n`
-      expect(parseMarkdown(source).root, `guarded combination ${attempt}`).toEqual(
-        full.parse(source),
-      )
-    }
+      return `${body}\n\n[ref]: https://example.invalid/\n\n[^n]: Footnote.\n`
+    })
+    // Keep all 400 deterministic comparisons, with independent time budgets and
+    // failure locations for each batch on slower shared runners.
+    it.each(Array.from({ length: 20 }, (_, batch) => batch))(
+      'matches full GFM trees and positions in batch %i',
+      (batch) => {
+        for (const [index, source] of sources.slice(batch * 20, (batch + 1) * 20).entries()) {
+          expect(parseMarkdown(source).root, `guarded combination ${batch * 20 + index}`).toEqual(
+            full.parse(source),
+          )
+        }
+      },
+    )
   })
 
   it('preserves complete trees while edits independently introduce and remove literal autolinks', () => {

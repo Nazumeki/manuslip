@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Bootstrap, Locale, Settings, Theme } from '../../shared/contracts'
 import type { DocumentController } from './document'
 import { EditorSettings } from './EditorSettings'
@@ -52,6 +52,7 @@ export function PreferencesPanel({
   const copy = preferencesCopy[bootstrap.settings.locale]
   const [query, setQuery] = useState('')
   const search = useRef<HTMLInputElement>(null)
+  const navigation = useRef<{ page: PreferencesPage; fromSearch: boolean } | null>(null)
   useEffect(() => {
     if (!open) setQuery('')
   }, [open])
@@ -69,19 +70,28 @@ export function PreferencesPanel({
     return normalizedQuery.split(/\s+/).every((word) => text.includes(word))
   })
   const navigate = (page: PreferencesPage, fromSearch = false): void => {
-    setQuery('')
-    setPreferencePage(page)
-    requestAnimationFrame(() => {
+    if (page === preferencePage && !query) {
       document.querySelector('.preferences-content')?.scrollTo(0, 0)
       if (page === 'translation') translationSettings.current?.reveal('provider')
-      else if (fromSearch)
-        document
-          .querySelector<HTMLElement>(
-            `#preferences-${page} :is(select, input, button):not(:disabled)`,
-          )
-          ?.focus()
-    })
+      return
+    }
+    navigation.current = { page, fromSearch }
+    setQuery('')
+    setPreferencePage(page)
   }
+  useLayoutEffect(() => {
+    const target = navigation.current
+    navigation.current = null
+    if (!open || !target) return
+    document.querySelector('.preferences-content')?.scrollTo(0, 0)
+    if (target.page === 'translation') translationSettings.current?.reveal('provider')
+    else if (target.fromSearch)
+      document
+        .querySelector<HTMLElement>(
+          `#preferences-${target.page} :is(select, input, button):not(:disabled)`,
+        )
+        ?.focus()
+  })
   const feedback = (
     <>
       <p className="feedback" role="status">

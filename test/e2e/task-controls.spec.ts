@@ -137,7 +137,10 @@ test('task targets replace unordered bullets and remain usable in light, dark an
     const checks = page.getByRole('checkbox', { name: 'Toggle task', exact: true })
     await expect(checks).toHaveCount(5)
     await expect(page.locator('.cm-live-bullet')).toHaveCount(2)
-    const observations = []
+    const observations: {
+      theme: string
+      targets: (Pick<DOMRect, 'x' | 'y' | 'width' | 'height'> & { input?: DOMRect })[]
+    }[] = []
     for (const theme of ['light', 'dark']) {
       await page.getByRole('button', { name: 'Preferences', exact: true }).click()
       await page.getByLabel('Appearance', { exact: true }).selectOption(theme)
@@ -148,35 +151,28 @@ test('task targets replace unordered bullets and remain usable in light, dark an
           window?.setMinimumSize(0, 0)
           window?.setContentSize(360, 800)
         })
-      await expect
-        .poll(() =>
-          page.locator('.cm-live-task').evaluateAll((labels) =>
-            labels.every((label) => {
-              const bounds = label.getBoundingClientRect()
-              return bounds.width >= 24 && bounds.height >= 24
-            }),
-          ),
+      // Theme updates can replace widgets; validate a complete layout in one snapshot.
+      await expect(async () => {
+        const targets = await page.locator('.cm-live-task').evaluateAll((labels) =>
+          labels.map((label) => {
+            const bounds = label.getBoundingClientRect()
+            const input = label.querySelector('input')?.getBoundingClientRect()
+            return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, input }
+          }),
         )
-        .toBe(true)
-      const targets = await page.locator('.cm-live-task').evaluateAll((labels) =>
-        labels.map((label) => {
-          const bounds = label.getBoundingClientRect()
-          const input = label.querySelector('input')?.getBoundingClientRect()
-          return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, input }
-        }),
-      )
-      expect(targets).toHaveLength(5)
-      for (const target of targets) {
-        expect(target.width).toBeGreaterThanOrEqual(24)
-        expect(target.height).toBeGreaterThanOrEqual(24)
-        expect(target.input?.width).toBe(18)
-      }
-      for (let index = 1; index < targets.length; index++) {
-        const previous = targets[index - 1]
-        const next = targets[index]
-        expect(next?.y).toBeGreaterThanOrEqual((previous?.y || 0) + (previous?.height || 0))
-      }
-      observations.push({ theme, targets })
+        expect(targets).toHaveLength(5)
+        for (const target of targets) {
+          expect(target.width).toBeGreaterThanOrEqual(24)
+          expect(target.height).toBeGreaterThanOrEqual(24)
+          expect(target.input?.width).toBe(18)
+        }
+        for (let index = 1; index < targets.length; index++) {
+          const previous = targets[index - 1]
+          const next = targets[index]
+          expect(next?.y).toBeGreaterThanOrEqual((previous?.y || 0) + (previous?.height || 0))
+        }
+        observations.push({ theme, targets })
+      }).toPass({ timeout: 5_000 })
       await checks.first().uncheck()
       // The label edge is outside the visible 18px input, but remains a native target.
       await page

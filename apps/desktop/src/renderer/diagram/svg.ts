@@ -1,7 +1,7 @@
 import { utf8Bytes } from '@manuslip/core/text'
 import { diagramLimits } from '@manuslip/renderer/diagram'
 import { diagramSourceLocator } from '@manuslip/renderer/diagram-source'
-import { restoreLegacyLabelText } from '@manuslip/renderer/legacy-diagram'
+import { restoreLegacyLabelFragments } from '@manuslip/renderer/legacy-diagram'
 import createDOMPurify from 'dompurify'
 
 const presentation = [
@@ -74,10 +74,13 @@ export function flattenDiagram(
     svg.setAttribute('height', String(viewport[3]))
   }
   if (legacyFlowchart) {
-    const text = document.createTreeWalker(svg, NodeFilter.SHOW_TEXT)
-    for (let node = text.nextNode(); node; node = text.nextNode()) {
-      if (node.parentElement?.closest('text, title, desc'))
-        node.textContent = restoreLegacyLabelText(node.textContent ?? '')
+    for (const label of svg.querySelectorAll('text, title, desc')) {
+      if (label.parentElement?.closest('text, title, desc')) continue
+      const text = document.createTreeWalker(label, NodeFilter.SHOW_TEXT)
+      const nodes: Node[] = []
+      for (let node = text.nextNode(); node; node = text.nextNode()) nodes.push(node)
+      const restored = restoreLegacyLabelFragments(nodes.map((node) => node.textContent ?? ''))
+      for (const [index, node] of nodes.entries()) node.textContent = restored[index] ?? ''
     }
   }
   if (source) {

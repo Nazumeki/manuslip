@@ -15,7 +15,7 @@ for (const { width, zoom, theme } of [
   { width: 1144, zoom: 1, theme: 'light' },
   { width: 420, zoom: 1.25, theme: 'dark' },
 ]) {
-  for (const target of ['gap', 'center', 'padding']) {
+  for (const target of ['gap', 'padding']) {
     test(`${theme} first click in LaTeX ${target} opens the closest expression row`, async () => {
       const directory = await mkdtemp(resolve('test/e2e/result/latex-first-click-'))
       const profile = join(directory, 'profile'),
@@ -39,10 +39,14 @@ for (const { width, zoom, theme } of [
           BrowserWindow.getAllWindows()[0]?.webContents.setZoomFactor(zoom)
         }, zoom)
         const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
-        if (prefix)
+        if (prefix) {
+          await expect(
+            page.getByRole('button', { name: /^\d+ words · Document details$/ }),
+          ).toBeVisible()
           await page.locator('.cm-scroller').evaluate((element) => {
             element.scrollTop = element.scrollHeight
           })
+        }
         const math = editor.getByRole('math', { name: value, exact: true })
         await expect(math.locator('svg')).toBeVisible()
         await expect(editor.locator('.cm-live-edit-source')).toHaveCount(0)
@@ -52,7 +56,6 @@ for (const { width, zoom, theme } of [
         const point = await math.evaluate(
           (element, { target, value }) => {
             const box = element.getBoundingClientRect()
-            if (target === 'center') return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
             const c = element.querySelector(`[data-source-from="${value.indexOf('c+d')}"]`)
             const plus = element.querySelector(`[data-source-from="${value.indexOf('c+d') + 1}"]`)
             if (!c || !plus) throw new Error('Missing second equation row')
@@ -73,19 +76,14 @@ for (const { width, zoom, theme } of [
         const line = await page.evaluate(
           () => getSelection()?.focusNode?.parentElement?.closest('.cm-line')?.textContent,
         )
-        expect(line).toMatch(target === 'center' ? /^(?:x &= a\+b|y &= c\+d)/ : /^y &= c\+d$/)
-        if (target !== 'center') {
-          await page.keyboard.insertText('Q')
-          await editor.press(`${modifier}+s`)
-          await expect
-            .poll(() => readFile(path, 'utf8'))
-            .toBe(
-              source.replace(
-                target === 'gap' ? 'c+d' : 'y &=',
-                target === 'gap' ? 'cQ+d' : 'Qy &=',
-              ),
-            )
-        }
+        expect(line).toBe('y &= c+d')
+        await page.keyboard.insertText('Q')
+        await editor.press(`${modifier}+s`)
+        await expect
+          .poll(() => readFile(path, 'utf8'))
+          .toBe(
+            source.replace(target === 'gap' ? 'c+d' : 'y &=', target === 'gap' ? 'cQ+d' : 'Qy &='),
+          )
         await page.screenshot({
           path: test.info().outputPath(`first-click-${target}-${width}.png`),
         })

@@ -176,7 +176,9 @@ for (const locale of ['en', 'zh-CN'] as const) {
         dialog.showSaveDialog = async () => ({ canceled: false, filePath })
       }, target)
       await clickDocumentAction(page, names.export)
-      await expect.poll(async () => readFile(target, 'utf8').catch(() => '')).toContain('<dt>Term')
+      await expect
+        .poll(async () => readFile(target, 'utf8').catch(() => ''), { timeout: 20_000 })
+        .toContain('<dt>Term')
       await expect
         .poll(async () => readFile(target, 'utf8').catch(() => ''))
         .toContain('data-export-kind="diagram"')

@@ -3,6 +3,7 @@ import { EditorSelection, type EditorState, type Extension, Prec } from '@codemi
 import { type EditorView, keymap } from '@codemirror/view'
 import { closedBlockAt } from './block-boundaries'
 import { activateLiveBlock, editingBlock, editLiveBlock } from './live-editing'
+import { htmlOutputFocus } from './live-html-focus'
 import { blockSourceRange, inlineProjection, isComposing } from './live-model'
 import { blockAtPreview, previewHitAtPoint } from './live-preview-position'
 import { delimitedSourcePosition } from './live-source-position'
@@ -40,6 +41,7 @@ export function finishBlockTransaction(state: EditorState, paragraph = false) {
 
 export function liveInteractions(): Extension {
   return [
+    htmlOutputFocus,
     Prec.high(
       keymap.of([
         {
@@ -74,15 +76,8 @@ export function liveInteractions(): Extension {
             const transaction = finishBlockTransaction(view.state)
             if (!transaction) return false
             view.dispatch(transaction)
-            if (editing?.block.kind === 'html') {
-              // Return keyboard users to the output they just finished editing.
-              // Native typing stays in the source editor until Escape is explicit.
-              const output = [...view.dom.querySelectorAll<HTMLElement>('.cm-live-html')].find(
-                (element) => blockAtPreview(view, element)?.from === editing.block.from,
-              )
-              output?.focus({ preventScroll: true })
-              output?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-            }
+            if (editing?.block.kind === 'html')
+              view.plugin(htmlOutputFocus)?.request(editing.block.from)
             return true
           },
         },

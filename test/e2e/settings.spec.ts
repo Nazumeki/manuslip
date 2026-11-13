@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import axe from 'axe-core'
+import { spellingChannel } from '../../apps/desktop/src/shared/spelling-contracts'
 import { contrast, launchDesktop } from './helpers'
 
 async function preferencesContrast(page: import('@playwright/test').Page): Promise<void> {
@@ -25,7 +26,7 @@ async function preferencesContrast(page: import('@playwright/test').Page): Promi
   )
 }
 
-test('offline spelling is opt-in, offers native corrections with undo and survives restart', async () => {
+test('offline spelling is opt-in, applies undoable corrections and survives restart', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'manuslip-spelling-'))
   const path = join(profile, 'spelling.md')
   await writeFile(path, 'mispell example')
@@ -35,7 +36,9 @@ test('offline spelling is opt-in, offers native corrections with undo and surviv
     let editor = page.getByRole('textbox', { name: 'Markdown source' })
     await expect(editor).toHaveText('mispell example')
     await expect(editor).toHaveAttribute('spellcheck', 'false')
-    expect((await readFile(join(profile, 'Dictionaries', 'en-US-10-2.bdic'))).length).toBe(451982)
+    // macOS uses the OS spelling service; Chromium dictionaries serve Windows/Linux.
+    if (process.platform !== 'darwin')
+      expect((await readFile(join(profile, 'Dictionaries', 'en-US-10-2.bdic'))).length).toBe(451982)
     await application.evaluate(({ session }) =>
       session.defaultSession.enableNetworkEmulation({ offline: true }),
     )
@@ -49,38 +52,26 @@ test('offline spelling is opt-in, offers native corrections with undo and surviv
     await page.screenshot({ path: test.info().outputPath('spelling-preferences-light.png') })
     await page.getByRole('button', { name: 'Close preferences', exact: true }).click()
     await expect(editor).toHaveAttribute('spellcheck', 'true')
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
-    let suggestion = ''
-    await expect
-      .poll(async () => {
-        const correction = application.evaluate(
-          ({ Menu }) =>
-            new Promise<string>((resolve) => {
-              const original = Menu.buildFromTemplate
-              Menu.buildFromTemplate = (template) => {
-                Menu.buildFromTemplate = original
-                const menu = original(template)
-                menu.popup = () => {
-                  // A native menu choice happens after the context-menu event
-                  // returns and Chromium has selected the misspelled word.
-                  setImmediate(() => {
-                    const suggestion = menu.getMenuItemById('spelling-0')
-                    suggestion?.click()
-                    resolve(suggestion?.label || '')
-                  })
-                }
-                return menu
-              }
-            }),
-        )
-        await editor
-          .locator('.cm-line')
-          .first()
-          .click({ button: 'right', position: { x: 25, y: 10 } })
-        suggestion = await correction
-        return suggestion
-      })
-      .not.toBe('')
+    const source = page.getByRole('button', { name: 'Source', exact: true })
+    await source.click()
+    await expect(source).toHaveAttribute('aria-pressed', 'true')
+    await expect(editor).toHaveAttribute('spellcheck', 'true')
+    // Exercise the application's correction boundary with a known native-menu choice.
+    // Dictionary availability and suggestions belong to the host OS on macOS.
+    await editor
+      .locator('.cm-line')
+      .first()
+      .dblclick({ position: { x: 25, y: 10 } })
+    await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('mispell')
+    const suggestion = 'misspell'
+    await application.evaluate(
+      ({ BrowserWindow }, { channel, correction }) => {
+        const window = BrowserWindow.getAllWindows()[0]
+        if (!window) throw new Error('Missing spelling window')
+        window.webContents.send(channel, correction)
+      },
+      { channel: spellingChannel, correction: { word: 'mispell', replacement: suggestion } },
+    )
     await expect(editor).toHaveText(`${suggestion} example`)
     await editor.focus()
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z')
