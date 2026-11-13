@@ -54,10 +54,14 @@ test('offline spelling is opt-in, offers native corrections with undo and surviv
     const source = page.getByRole('button', { name: 'Source', exact: true })
     await source.click()
     await expect(source).toHaveAttribute('aria-pressed', 'true')
+    await expect(editor).toHaveAttribute('spellcheck', 'true')
     let suggestion = ''
     await expect
       .poll(
         async () => {
+          // The captured menu never takes native focus. Refocus the field on each
+          // attempt so an OS service that started late can check its existing text.
+          await source.focus()
           // Install the capture before dispatching input, without leaving an event promise
           // running after the poll deadline. macOS may still be starting its spelling service.
           const correction = await application.evaluateHandle(({ Menu }) => {

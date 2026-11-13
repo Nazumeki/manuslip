@@ -1,10 +1,15 @@
+import { ensureSyntaxTree } from '@codemirror/language'
 import { EditorSelection, EditorState, type Transaction } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
 import { createSourceState, redo, undo } from '../../src/index'
 import { codeBlockTransaction, inlineFormatTransaction } from '../../src/markdown-format'
 
 function select(source: string, anchor = 0, head = source.length) {
-  return createSourceState(source).update({ selection: { anchor, head } }).state
+  const state = createSourceState(source)
+  // Prepare the syntax as the editor's background parser would. These assertions
+  // exercise formatting, independently of the command's interactive parse budget.
+  expect(ensureSyntaxTree(state, state.doc.length, 1000)).not.toBeNull()
+  return state.update({ selection: { anchor, head } }).state
 }
 
 describe('Markdown formatting', () => {

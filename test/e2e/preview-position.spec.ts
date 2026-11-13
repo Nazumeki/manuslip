@@ -82,7 +82,7 @@ test('wide table edits retain horizontal scroll, layout and the focused cell on 
     expect((await table.locator('table').boundingBox())?.width).toBeCloseTo(layout?.width ?? 0, 0)
     await cell.press('Escape')
     await expect(cell).toHaveCount(0)
-    expect(await scroll.evaluate((element) => element.scrollLeft)).toBeCloseTo(left, 0)
+    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeCloseTo(left, 0)
     const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
     await expect(editor).toBeFocused()
     await page.keyboard.insertText('Y')
