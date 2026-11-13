@@ -518,8 +518,12 @@ export class LiveTable {
       effects: editLiveBlock.of(null),
       selection: EditorSelection.create([EditorSelection.cursor(at, backward ? -1 : 1)]),
     })
+    // Remove the child selection before focusing its parent. Deferred cleanup can
+    // otherwise let the browser reveal the old cell and reset horizontal scroll.
+    this.synchronize()
     this.view.focus()
-    if (scroll) scroll.scrollLeft = left
+    const restored = this.content.querySelector('.render-table-scroll')
+    if (restored) restored.scrollLeft = left
   }
 
   private destroy(): void {

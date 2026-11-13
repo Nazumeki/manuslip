@@ -8,7 +8,10 @@ import { requiresTranslationKey } from './translation/availability'
 import type { DocumentReading } from './translation/controller'
 import { readingCopy } from './translation/copy'
 import { languageName, translationLanguages } from './translation/languages'
-import type { ConfigureTranslation } from './translation/settings-navigation'
+import type {
+  ConfigureTranslation,
+  TranslationSettingsTarget,
+} from './translation/settings-navigation'
 import { useSourcePreview } from './translation/source-preview'
 import { mountReading } from './translation/surface'
 import { ReadingViewport } from './translation/viewport'
@@ -28,6 +31,7 @@ export function ReadingPreview({
   const status = useStore(reading.store)
   const source = useDocumentStatus(document)
   const [pendingActions, setPendingActions] = useState(0)
+  const [settingsReturn, setSettingsReturn] = useState<TranslationSettingsTarget | null>(null)
   const article = useRef<HTMLElement>(null)
   const viewport = useRef<ReadingViewport | null>(null)
   const actions = useRef<HTMLDivElement>(null)
@@ -37,13 +41,18 @@ export function ReadingPreview({
     const origin = window.document.activeElement
     showSettings(target, () => {
       // Native dialogs return to a surviving invoker. Setup can remove that button.
-      if (origin?.isConnected || !reading.store.getState().configuration?.settings) return
-      const active = window.document.activeElement
-      if (active !== window.document.body && !active?.closest('dialog:not([open])')) return
-      const field = target === 'languages' ? language.current : translate.current
-      if (field && !field.disabled) field.focus()
+      if (!origin?.isConnected) setSettingsReturn(target)
     })
   }
+  useLayoutEffect(() => {
+    if (!settingsReturn || (status.visible && status.configurationLoading)) return
+    setSettingsReturn(null)
+    if (!status.visible || !status.configuration?.settings) return
+    const active = window.document.activeElement
+    if (active !== window.document.body && !active?.closest('dialog:not([open])')) return
+    const field = settingsReturn === 'languages' ? language.current : translate.current
+    if (field && !field.disabled) field.focus()
+  }, [settingsReturn, status.visible, status.configurationLoading, status.configuration])
   const busy = status.phase === 'preparing' || status.phase === 'translating'
   const sourcePreview = useSourcePreview(
     document,

@@ -23,7 +23,9 @@ test('one toolbar keeps tabs and native editing aligned across window sizes', as
           BrowserWindow.getAllWindows()[0]?.isMenuBarVisible(),
         ),
       ).toBe(false)
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    const source = page.getByRole('button', { name: 'Source', exact: true })
+    await source.click()
+    await expect(source).toHaveAttribute('aria-pressed', 'true')
     await editor.fill('A draft with history.')
     await editor.press('ControlOrMeta+End')
     await page.keyboard.type(' Another thought.')

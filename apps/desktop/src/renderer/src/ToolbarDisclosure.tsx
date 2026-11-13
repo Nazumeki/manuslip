@@ -35,6 +35,7 @@ export function ToolbarDisclosure({
         <span className={iconOnly ? 'visually-hidden' : undefined}>{summary ?? label}</span>
         {!iconOnly && <Icon name="chevron" size={12} />}
       </button>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Delegates native button clicks, including Enter and Space activation. */}
       <fieldset
         id={id}
         className="toolbar-popover"
@@ -46,8 +47,13 @@ export function ToolbarDisclosure({
           setOpen(open)
           onOpenChange?.(open)
         }}
-        onClickCapture={(event) => {
-          if (event.target instanceof Element && event.target.closest('button'))
+        onClick={(event) => {
+          // Activate the command before hiding its control and making the panel inert.
+          if (
+            event.target instanceof Element &&
+            event.target.closest('button') &&
+            event.currentTarget.matches(':popover-open')
+          )
             event.currentTarget.hidePopover()
         }}
       >

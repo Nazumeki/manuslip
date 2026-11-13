@@ -33,7 +33,8 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           : kind === 'math'
             ? `$$\n${value}\n$$`
             : `\`\`\`mermaid\n${value}\n\`\`\``
-      const source = `${padding}${block}\n\n${padding}`
+      const anchor = 'Before the rendered block.'
+      const source = `${padding}${anchor}\n\n${block}\n\n${padding}`
       await mkdir(profile)
       await writeFile(
         join(profile, 'preferences.json'),
@@ -60,14 +61,15 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           await page.keyboard.press('Escape')
           await expect(page.locator('.preferences-dialog')).not.toBeVisible()
         }
-        const scroller = page.locator('.cm-scroller')
         await expect(page.locator('.preview-toolbar [role="status"]')).toHaveCount(0)
-        await scroller.evaluate(async (element) => {
-          // CodeMirror measures the collapsed blocks after the conventions update commits.
-          await new Promise(requestAnimationFrame)
-          await new Promise(requestAnimationFrame)
-          element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
-        })
+        // Locate the block through its neighboring source, independent of virtual height estimates.
+        await editor.press(`${modifier}+f`)
+        const search = page.locator('.cm-search input[name="search"]')
+        await search.fill(anchor)
+        await search.press('Tab')
+        await page.locator('.cm-search button[name="next"]').click()
+        await expect(editor).toContainText(anchor)
+        await search.press('Escape')
         const rendered = page.locator(`.cm-live-${kind}:not(.cm-live-edit-preview)`)
         await rendered.scrollIntoViewIfNeeded()
         if (kind !== 'html') await expect(rendered.locator('svg')).toBeVisible()
