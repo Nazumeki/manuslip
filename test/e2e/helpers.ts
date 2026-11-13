@@ -9,8 +9,19 @@ import {
 
 export { contrast } from '../helpers/contrast'
 
-export const plainPasteShortcut =
-  process.platform === 'darwin' ? 'Meta+Alt+Shift+v' : 'Control+Shift+v'
+export async function pastePlainText(application: ElectronApplication, editor: Locator) {
+  if (process.platform !== 'darwin') {
+    await editor.press('Control+Shift+v')
+    return
+  }
+  // DevTools key events do not invoke Cocoa's native menu selectors.
+  await expect(editor).toBeFocused()
+  await application.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getFocusedWindow()
+    if (!window) throw new Error('Missing focused paste window')
+    window.webContents.pasteAndMatchStyle()
+  })
+}
 
 export async function launchDesktop(
   profile: string,
@@ -29,7 +40,8 @@ export async function launchDesktop(
       const window = BrowserWindow.getAllWindows()[0]
       if (!window) throw new Error('Missing application window')
       // Narrow layout tests deliberately exercise widths below the native minimum.
-      window.setMinimumSize(0, 0)
+      // macOS treats a zero minimum as absent and keeps the former native constraint.
+      window.setMinimumSize(1, 1)
       window.show()
       app.focus({ steal: true })
       window.focus()

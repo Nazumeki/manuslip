@@ -36,16 +36,10 @@ export function ReadingPreview({
   const configure: ConfigureTranslation = (target = 'provider') => {
     const origin = window.document.activeElement
     showSettings(target, () => {
-      // Without a usable configuration, keep the native return to the settings invoker.
-      if (!reading.store.getState().configuration?.settings) return
+      // Native dialogs return to a surviving invoker. Setup can remove that button.
+      if (origin?.isConnected || !reading.store.getState().configuration?.settings) return
       const active = window.document.activeElement
-      if (
-        origin?.isConnected &&
-        active !== origin &&
-        active !== window.document.body &&
-        !active?.closest('dialog:not([open])')
-      )
-        return
+      if (active !== window.document.body && !active?.closest('dialog:not([open])')) return
       const field = target === 'languages' ? language.current : translate.current
       if (field && !field.disabled) field.focus()
     })

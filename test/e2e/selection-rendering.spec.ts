@@ -231,6 +231,10 @@ for (const mode of ['Source', 'Live Preview']) {
     await workspace(async (page, _application, editor) => {
       await editor.fill('Start alpha beta gamma tail\ntoken keep token')
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const points = await editor
         .locator('.cm-line')
         .first()

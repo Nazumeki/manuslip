@@ -7,7 +7,7 @@ import {
   contrast,
   launchDesktop,
   openMarkdownExtensions,
-  plainPasteShortcut,
+  pastePlainText,
 } from './helpers'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
@@ -86,7 +86,7 @@ test('native paste preserves plain text when HTML is also available, including o
     await expect
       .poll(async () => (await editor.locator('.cm-line').allTextContents()).join('\n'))
       .toBe('Before\n\n')
-    await editor.press(plainPasteShortcut)
+    await pastePlainText(application, editor)
     await expect(editor).toContainText('Plain content')
     await expect(editor).not.toContainText('Clipboard 标题')
     await editor.fill('```text\n\n```')
