@@ -52,9 +52,24 @@ test('self-contained HTML and PDF export preserve tables, Unicode, code, local i
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, htmlPath)
     await clickDocumentAction(page, 'Export HTML…')
-    await expect(page.getByText(`Exported to ${htmlPath}`, { exact: true })).toBeVisible({
-      timeout: 15000,
-    })
+    try {
+      await expect(page.getByText(`Exported to ${htmlPath}`, { exact: true })).toBeVisible({
+        timeout: 15000,
+      })
+    } catch (error) {
+      // Feedback is transient; retain even a hidden failure message for shared CI hosts.
+      await test.info().attach('html-export-feedback', {
+        body: JSON.stringify(await page.locator('.export-feedback').allTextContents()),
+        contentType: 'application/json',
+      })
+      const artifact = await readFile(htmlPath).catch(() => null)
+      if (artifact)
+        await test.info().attach('html-export-before-failure', {
+          body: artifact,
+          contentType: 'text/html',
+        })
+      throw error
+    }
     const html = await readFile(htmlPath, 'utf8')
     expect(html).toContain('<table>')
     expect(html).toContain('你好')

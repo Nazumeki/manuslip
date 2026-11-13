@@ -392,10 +392,18 @@ test('partial and stale export choices preserve the clicked copy despite late re
       '你好，欢迎阅读这份跨语言文档 first pending.',
     )
     await page.keyboard.press(`${modifier}+1`)
+    await expect(page.getByRole('button', { name: 'Source', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     await page.locator('.cm-content').focus()
     await page.keyboard.press(`${modifier}+End`)
     await page.keyboard.type('\n\nLATER SOURCE EDIT')
+    await expect(page.locator('.cm-content')).toContainText('LATER SOURCE EDIT')
     await page.keyboard.press(`${modifier}+3`)
+    await expect(
+      page.getByRole('button', { name: 'Translated preview', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true')
     await expect(choice).toContainText('Side by side')
     await expect(choice).toContainText('2 untranslated prose units')
     await choice.getByRole('button', { name: 'Export this copy', exact: true }).click()
@@ -439,6 +447,10 @@ test('partial and stale export choices preserve the clicked copy despite late re
     await expect(page.getByRole('button', { name: 'Document actions', exact: true })).toBeFocused()
     // Returning to Source restores ordinary exports of the current editable document.
     await page.keyboard.press(`${modifier}+1`)
+    await expect(page.getByRole('button', { name: 'Source', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     await clickDocumentAction(page, 'Export HTML…')
     await expect(page.getByText(`Exported to ${htmlPath}`, { exact: true })).toBeVisible({
       timeout: 15000,

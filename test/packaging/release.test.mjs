@@ -14,6 +14,19 @@ const metadata = JSON.parse(
 )
 const execute = promisify(execFile)
 
+test('installer snapshots recover from deleted registry handles and retain other failures', {
+  skip: process.platform !== 'win32',
+}, async () => {
+  await execute('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    resolve('test/packaging/helpers/windows-installer-state.test.ps1'),
+  ])
+})
+
 test('ordinary and release plans stay unsigned and without a feed unless explicitly requested', async () => {
   assert.equal(metadata.build.publish, null)
   assert.equal(metadata.build.win.signExecutable, false)

@@ -144,12 +144,15 @@ test('Pandoc reading exports retain each layout and a confirmed stale copy witho
       expect(requests).toBe(completed)
       expect(await readFile(path, 'utf8')).toBe(original)
     }
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    const sourceMode = page.getByRole('button', { name: 'Source', exact: true })
+    await sourceMode.click()
+    await expect(sourceMode).toHaveAttribute('aria-pressed', 'true')
     const editor = page.locator('.cm-content'),
       modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
     await editor.press(`${modifier}+End`)
     await editor.press('Enter')
     await editor.type('Later source')
+    await expect(editor).toContainText('Later source')
     await editor.press(`${modifier}+s`)
     await expect
       .poll(async () => (await readFile(path, 'utf8')).endsWith('Later source'))
