@@ -51,37 +51,50 @@ test('offline spelling is opt-in, offers native corrections with undo and surviv
     await page.screenshot({ path: test.info().outputPath('spelling-preferences-light.png') })
     await page.getByRole('button', { name: 'Close preferences', exact: true }).click()
     await expect(editor).toHaveAttribute('spellcheck', 'true')
-    await page.getByRole('button', { name: 'Source', exact: true }).click()
+    const source = page.getByRole('button', { name: 'Source', exact: true })
+    await source.click()
+    await expect(source).toHaveAttribute('aria-pressed', 'true')
     let suggestion = ''
     await expect
-      .poll(async () => {
-        const correction = application.evaluate(
-          ({ Menu }) =>
-            new Promise<string>((resolve) => {
-              const original = Menu.buildFromTemplate
-              Menu.buildFromTemplate = (template) => {
-                Menu.buildFromTemplate = original
-                const menu = original(template)
-                menu.popup = () => {
-                  // A native menu choice happens after the context-menu event
-                  // returns and Chromium has selected the misspelled word.
-                  setImmediate(() => {
-                    const suggestion = menu.getMenuItemById('spelling-0')
-                    suggestion?.click()
-                    resolve(suggestion?.label || '')
-                  })
-                }
-                return menu
+      .poll(
+        async () => {
+          // Install the capture before dispatching input, without leaving an event promise
+          // running after the poll deadline. macOS may still be starting its spelling service.
+          const correction = await application.evaluateHandle(({ Menu }) => {
+            const result = { suggestion: null as string | null }
+            const original = Menu.buildFromTemplate
+            Menu.buildFromTemplate = (template) => {
+              Menu.buildFromTemplate = original
+              const menu = original(template)
+              menu.popup = () => {
+                // A native menu choice happens after the context-menu event
+                // returns and Chromium has selected the misspelled word.
+                setImmediate(() => {
+                  const suggestion = menu.getMenuItemById('spelling-0')
+                  suggestion?.click()
+                  result.suggestion = suggestion?.label || ''
+                })
               }
-            }),
-        )
-        await editor
-          .locator('.cm-line')
-          .first()
-          .click({ button: 'right', position: { x: 25, y: 10 } })
-        suggestion = await correction
-        return suggestion
-      })
+              return menu
+            }
+            return result
+          })
+          try {
+            await editor
+              .locator('.cm-line')
+              .first()
+              .click({ button: 'right', position: { x: 25, y: 10 } })
+            await expect
+              .poll(() => correction.evaluate((result) => result.suggestion))
+              .not.toBeNull()
+            suggestion = (await correction.evaluate((result) => result.suggestion)) || ''
+            return suggestion
+          } finally {
+            await correction.dispose()
+          }
+        },
+        { timeout: process.platform === 'darwin' ? 10_000 : 5_000 },
+      )
       .not.toBe('')
     await expect(editor).toHaveText(`${suggestion} example`)
     await editor.focus()
