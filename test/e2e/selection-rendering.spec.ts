@@ -37,13 +37,14 @@ async function workspace(
 
 async function selectLines(editor: Locator, backward: boolean) {
   await editor.press(`${modifier}+Home`)
-  if (backward) {
-    for (let index = 0; index < 3; index++) await editor.press('Shift+ArrowDown')
-    await editor.press('ArrowRight')
-  }
+  const length = 'refix alpha beta\nshort\n\nf'.length
   await editor.press('ArrowRight')
-  for (let index = 0; index < 3; index++)
-    await editor.press(backward ? 'Shift+ArrowUp' : 'Shift+ArrowDown')
+  if (backward) {
+    for (let index = 0; index < length; index++) await editor.press('ArrowRight')
+  }
+  // Vertical movement follows visual columns, which differ with proportional fonts.
+  for (let index = 0; index < length; index++)
+    await editor.press(backward ? 'Shift+ArrowLeft' : 'Shift+ArrowRight')
 }
 
 async function checkPaint(page: Page, application: ElectronApplication) {
@@ -230,6 +231,10 @@ for (const mode of ['Source', 'Live Preview']) {
     await workspace(async (page, _application, editor) => {
       await editor.fill('Start alpha beta gamma tail\ntoken keep token')
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const points = await editor
         .locator('.cm-line')
         .first()

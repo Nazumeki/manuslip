@@ -87,3 +87,17 @@ it('checks actual native image geometry before encoding', async () => {
   ).rejects.toMatchObject({ code: 'export-image-limit' })
   expect(value.image.toPNG).not.toHaveBeenCalled()
 })
+it.each([
+  { width: 1008, height: 1201 },
+  { width: 1024, height: 1190 },
+])(
+  'rejects a clipped native bitmap instead of exporting incomplete content: %j',
+  async (dimensions) => {
+    const value = fixture()
+    value.image.getSize = () => dimensions
+    await expect(
+      captureRaster(value.window, 'png', new AbortController().signal),
+    ).rejects.toMatchObject({ code: 'export-render' })
+    expect(value.image.toPNG).not.toHaveBeenCalled()
+  },
+)

@@ -39,6 +39,10 @@ for (const mode of ['Source', 'Live Preview']) {
     const source = '- one\n\n- two'
     await fixture(source, async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+a`)
       await page.keyboard.press('Tab')
@@ -52,6 +56,10 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} toggles bold and italic without losing the selection or undo`, async () => {
     await fixture('alpha', async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+a`)
       await page.keyboard.press(`${modifier}+b`)
@@ -79,6 +87,10 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} formats paragraphs separately and preserves unselected emphasis`, async () => {
     await fixture('alpha\n\nbeta', async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+a`)
       await page.keyboard.press(`${modifier}+b`)
@@ -101,8 +113,13 @@ for (const mode of ['Source', 'Live Preview']) {
     const source = '> - ```\n>   alpha\n>   ```'
     await fixture(source, async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
+      await expect(editor.locator('.cm-line').filter({ hasText: '>   alpha' })).toBeVisible()
       await page.keyboard.press('ArrowUp')
       await page.keyboard.press('End')
       await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Alt+c' : 'Control+Shift+k')
@@ -115,6 +132,10 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} creates a code block with the formatting shortcut and preserves its content`, async () => {
     await fixture('alpha', async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
       const shortcut = process.platform === 'darwin' ? 'Meta+Alt+c' : 'Control+Shift+k'
@@ -136,6 +157,10 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} indents and outdents list items from the text caret`, async () => {
     await fixture('- parent\n- child', async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
       await page.keyboard.press('Tab')
@@ -157,6 +182,10 @@ for (const mode of ['Source', 'Live Preview']) {
   test(`${mode} distinguishes paragraph and line breaks according to the editing mode`, async () => {
     await fixture('alpha', async (page, path) => {
       await page.getByRole('button', { name: mode, exact: true }).click()
+      await expect(page.getByRole('button', { name: mode, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
       await editor.press(`${modifier}+End`)
       await page.keyboard.press('Enter')

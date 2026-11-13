@@ -349,10 +349,11 @@ describe('owned packed value serialization', () => {
     let output: PackedValue<PackedSerializedValue> | undefined
     try {
       let advances = 0
+      let peakReads = 0
       while (true) {
         read.mockClear()
         const step = work.next()
-        expect(read.mock.calls.length).toBeLessThan(1500)
+        peakReads = Math.max(peakReads, read.mock.calls.length)
         if (step.done) {
           output = step.value
           break
@@ -360,6 +361,7 @@ describe('owned packed value serialization', () => {
         advances++
       }
       read.mockRestore()
+      expect(peakReads).toBeLessThan(1500)
       expect(advances).toBeGreaterThan(80000)
       if (!output) throw new Error('Missing output')
       expect(decoded(output)).toEqual(Array.from({ length: 40000 }, (_, index) => index))

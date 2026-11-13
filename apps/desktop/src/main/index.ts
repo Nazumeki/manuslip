@@ -28,6 +28,7 @@ import { registerAssetHandlers } from './assets/ipc'
 import { LocalAssets } from './assets/repository'
 import { ClipboardConverter } from './clipboard/converter'
 import { Diagrams } from './diagrams/ipc'
+import { installDocumentShortcuts } from './document-shortcuts'
 import { registerExportHandlers } from './exports/ipc'
 import { ExportManager } from './exports/manager'
 import { registerFileHandlers } from './file-ipc'
@@ -251,6 +252,7 @@ async function createWindow(): Promise<void> {
     },
   })
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  installDocumentShortcuts(window.webContents, command)
   installEditingMenu(
     window,
     () => settings.get().locale,

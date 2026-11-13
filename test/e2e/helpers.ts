@@ -9,13 +9,49 @@ import {
 
 export { contrast } from '../helpers/contrast'
 
-export function launchDesktop(profile: string, paths: string[] = []): Promise<ElectronApplication> {
-  return electron.launch({
+export async function pastePlainText(application: ElectronApplication, editor: Locator) {
+  if (process.platform !== 'darwin') {
+    await editor.press('Control+Shift+v')
+    return
+  }
+  // DevTools key events do not invoke Cocoa's native menu selectors.
+  await expect(editor).toBeFocused()
+  await application.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getFocusedWindow()
+    if (!window) throw new Error('Missing focused paste window')
+    window.webContents.pasteAndMatchStyle()
+  })
+}
+
+export async function launchDesktop(
+  profile: string,
+  paths: string[] = [],
+): Promise<ElectronApplication> {
+  const application = await electron.launch({
     ...(process.env.MANUSLIP_PACKAGED_EXECUTABLE
       ? { executablePath: process.env.MANUSLIP_PACKAGED_EXECUTABLE, args: paths }
       : { args: [resolve('apps/desktop'), ...paths] }),
     env: { ...process.env, MANUSLIP_TEST_PROFILE: profile },
   })
+  try {
+    const page = await application.firstWindow()
+    await page.waitForLoadState('domcontentloaded')
+    await application.evaluate(({ app, BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows()[0]
+      if (!window) throw new Error('Missing application window')
+      // Narrow layout tests deliberately exercise widths below the native minimum.
+      // macOS treats a zero minimum as absent and keeps the former native constraint.
+      window.setMinimumSize(1, 1)
+      window.show()
+      app.focus({ steal: true })
+      window.focus()
+    })
+    await expect.poll(() => page.evaluate(() => document.hasFocus())).toBe(true)
+    return application
+  } catch (error) {
+    await application.close()
+    throw error
+  }
 }
 
 async function openDisclosure(page: Page, name: RegExp): Promise<Locator> {

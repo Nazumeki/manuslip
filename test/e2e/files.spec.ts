@@ -217,6 +217,10 @@ test('inactive files autosave and reload; reopening activates the existing tab a
     await chooseOpen(application, path)
     await page.getByRole('button', { name: 'Open file…', exact: true }).first().click()
     await page.getByRole('button', { name: 'Source', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Source', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     const editor = page.getByRole('textbox', { name: 'Markdown source' })
     await editor.focus()
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+End' : 'Control+End')

@@ -141,7 +141,13 @@ test('reading presentations and images retain each bilingual layout without new 
       expect(await readFile(path, 'utf8')).toBe(original)
     }
     await page.getByRole('button', { name: 'Source', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Source', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     const editor = page.locator('.cm-content')
+    await expect(editor).toBeVisible()
+    await expect(editor).toBeFocused()
     await editor.press(`${modifier}+End`)
     await editor.press('Enter')
     await editor.type('Later source')
@@ -276,12 +282,16 @@ async function audit(page: Page, name: string): Promise<void> {
   await test.info().attach(name, { path, contentType: 'image/png' })
 }
 async function narrow(application: ElectronApplication, page: Page): Promise<void> {
-  await application.evaluate(({ BrowserWindow }) => {
+  await application.evaluate(async ({ BrowserWindow }) => {
     const view = BrowserWindow.getAllWindows().find((window) =>
       window.webContents.getURL().includes('/print/index.html'),
     )
     if (!view) throw new Error('Missing presentation window')
-    view.setFullScreen(false)
+    if (view.isFullScreen()) {
+      const left = new Promise<void>((resolve) => view.once('leave-full-screen', () => resolve()))
+      view.setFullScreen(false)
+      await left
+    }
     view.setContentSize(420, 900)
   })
   await expect.poll(() => page.evaluate(() => innerWidth)).toBe(420)

@@ -536,7 +536,8 @@ export function App(): React.JSX.Element {
             }
           }}
           onCancel={() => setPreferencesOpen(false)}
-          onClose={() => {
+          onClose={(event) => {
+            if (event.currentTarget.open) return
             setPreferencesOpen(false)
             const afterClose = translationSettingsClosed.current
             translationSettingsClosed.current = null

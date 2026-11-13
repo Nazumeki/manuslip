@@ -315,7 +315,9 @@ test('translated reading preserves structure, private bindings, source history, 
     expect(received).toHaveLength(calls)
     // Source history contains only the user's edit, never translated content.
     await page.keyboard.press(`${modifier}+1`)
+    await expect(page.locator('.cm-content')).toBeVisible()
     await page.locator('.cm-content').focus()
+    await expect(page.locator('.cm-content')).toBeFocused()
     await page.keyboard.press(`${modifier}+End`)
     await page.keyboard.type('Hello added paragraph.')
     await page.keyboard.press(`${modifier}+3`)
@@ -333,6 +335,7 @@ test('translated reading preserves structure, private bindings, source history, 
     await waitForReading(page)
     expect(received).toHaveLength(calls + 1)
     await page.keyboard.press(`${modifier}+1`)
+    await expect(page.locator('.cm-content')).toBeVisible()
     await page.locator('.cm-content').focus()
     await page.keyboard.press(`${modifier}+z`)
     await expect(page.locator('.cm-content')).not.toContainText('added paragraph')
