@@ -82,6 +82,9 @@ export class PrintHost {
       width: payload.mode === 'presentation' ? 1280 : payload.mode === 'raster' ? 1024 : 643,
       height: payload.mode === 'presentation' ? 800 : payload.mode === 'raster' ? 512 : 1000,
       useContentSize: payload.mode === 'raster',
+      // Hidden image surfaces must retain their admitted size on small displays.
+      frame: payload.mode !== 'raster',
+      enableLargerThanScreen: payload.mode === 'raster',
       title: payload.mode === 'presentation' ? payload.title : 'Manuslip export renderer',
       skipTaskbar: payload.mode !== 'presentation',
       webPreferences: {

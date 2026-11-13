@@ -525,6 +525,8 @@ export class LiveTable {
   }
 
   private closeCell(keepCells = false): void {
+    const scroll = this.content.querySelector('.render-table-scroll')
+    const left = scroll?.scrollLeft ?? 0
     if (!keepCells) this.sourceCells = undefined
     const target = this.cell && this.element(this.cell.row, this.cell.column)
     if (target && this.cellContent) {
@@ -536,6 +538,8 @@ export class LiveTable {
     this.unregister?.()
     this.editor = null
     this.cell = null
+    // Restoring native cell contents can reset an ancestor's scroll position.
+    if (scroll) scroll.scrollLeft = left
     if (activeTables.get(this.view) === this) activeTables.delete(this.view)
   }
 }

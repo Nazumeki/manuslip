@@ -35,7 +35,9 @@ test('offline spelling is opt-in, offers native corrections with undo and surviv
     let editor = page.getByRole('textbox', { name: 'Markdown source' })
     await expect(editor).toHaveText('mispell example')
     await expect(editor).toHaveAttribute('spellcheck', 'false')
-    expect((await readFile(join(profile, 'Dictionaries', 'en-US-10-2.bdic'))).length).toBe(451982)
+    // macOS uses the OS spelling service; Chromium dictionaries serve Windows/Linux.
+    if (process.platform !== 'darwin')
+      expect((await readFile(join(profile, 'Dictionaries', 'en-US-10-2.bdic'))).length).toBe(451982)
     await application.evaluate(({ session }) =>
       session.defaultSession.enableNetworkEmulation({ offline: true }),
     )

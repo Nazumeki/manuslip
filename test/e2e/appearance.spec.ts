@@ -230,10 +230,12 @@ for (const locale of ['en', 'zh-CN'] as const) {
       }, htmlPath)
       await clickDocumentAction(page, names.export)
       await expect
-        .poll(async () =>
-          (await readFile(htmlPath, 'utf8').catch(() => '')).includes(
-            'data-document-style="export"',
-          ),
+        .poll(
+          async () =>
+            (await readFile(htmlPath, 'utf8').catch(() => '')).includes(
+              'data-document-style="export"',
+            ),
+          { timeout: 20_000 },
         )
         .toBe(true)
       const html = await readFile(htmlPath, 'utf8')

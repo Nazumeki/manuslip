@@ -37,13 +37,14 @@ async function workspace(
 
 async function selectLines(editor: Locator, backward: boolean) {
   await editor.press(`${modifier}+Home`)
-  if (backward) {
-    for (let index = 0; index < 3; index++) await editor.press('Shift+ArrowDown')
-    await editor.press('ArrowRight')
-  }
+  const length = 'refix alpha beta\nshort\n\nf'.length
   await editor.press('ArrowRight')
-  for (let index = 0; index < 3; index++)
-    await editor.press(backward ? 'Shift+ArrowUp' : 'Shift+ArrowDown')
+  if (backward) {
+    for (let index = 0; index < length; index++) await editor.press('ArrowRight')
+  }
+  // Vertical movement follows visual columns, which differ with proportional fonts.
+  for (let index = 0; index < length; index++)
+    await editor.press(backward ? 'Shift+ArrowLeft' : 'Shift+ArrowRight')
 }
 
 async function checkPaint(page: Page, application: ElectronApplication) {

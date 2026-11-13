@@ -54,7 +54,11 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
         if (kind === 'html') {
           const extensions = await openMarkdownExtensions(page)
           await extensions.getByLabel('Render sanitized HTML', { exact: true }).check()
+          await expect(
+            extensions.getByLabel('Render sanitized HTML', { exact: true }),
+          ).toBeEnabled()
           await page.keyboard.press('Escape')
+          await expect(page.locator('.preferences-dialog')).not.toBeVisible()
         }
         const scroller = page.locator('.cm-scroller')
         await scroller.evaluate((element) => {
@@ -183,6 +187,7 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           const panel = page.locator('.cm-live-preview-panel')
           await expect(panel).toBeVisible()
           if (size === 'tall') {
+            await expect(preview.locator('svg')).toBeVisible()
             expect(
               await panel.evaluate((element) => element.scrollHeight > element.clientHeight),
             ).toBe(true)

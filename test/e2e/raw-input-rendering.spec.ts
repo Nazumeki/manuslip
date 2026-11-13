@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type ElectronApplication, expect, type Page, test } from '@playwright/test'
-import { launchDesktop, openMarkdownExtensions } from './helpers'
+import { launchDesktop, openMarkdownExtensions, plainPasteShortcut } from './helpers'
 
 const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
 
@@ -99,7 +99,7 @@ for (const mode of ['Source', 'Live Preview']) {
         if (command === 'toolbar') {
           await page.getByRole('button', { name: 'Edit', exact: true }).click()
           await page.getByRole('button', { name: /^Paste/ }).click()
-        } else await editor.press(`${modifier}+${command === 'plain' ? 'Shift+' : ''}v`)
+        } else await editor.press(command === 'plain' ? plainPasteShortcut : `${modifier}+v`)
         await saved(page, path, `Before\n\n${text}`)
         await editor.press(`${modifier}+z`)
         await saved(page, path, 'Before\n\n')

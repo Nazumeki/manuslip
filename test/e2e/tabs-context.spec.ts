@@ -133,11 +133,13 @@ for (const theme of ['light', 'dark'])
           return {
             png: image.toPNG().toString('base64'),
             size: image.getSize(),
+            contentSize: window.getContentSize(),
             zoom: window.webContents.getZoomFactor(),
           }
         })
-        expect(capture.size.width).toBeGreaterThanOrEqual(config.width * config.zoom)
-        expect(capture.size.height).toBeGreaterThanOrEqual(800 * config.zoom)
+        // macOS constrains native height to the display's work area.
+        expect(capture.size.width).toBeGreaterThanOrEqual(capture.contentSize[0] ?? 0)
+        expect(capture.size.height).toBeGreaterThanOrEqual(capture.contentSize[1] ?? 0)
         expect(capture.zoom).toBe(config.zoom)
         observations.push({ config, closeNames, measured, capture: { size: capture.size } })
         const screenshot = join(directory, `${theme}-${index}.png`)

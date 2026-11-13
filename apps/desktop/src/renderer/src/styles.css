@@ -2771,6 +2771,11 @@ dialog[open][data-input-method="pointer"]::backdrop {
 :is(dialog:not([open]), .toolbar-popover:not(:popover-open)) {
   pointer-events: none;
 }
+
+/* Closing ends keyboard/assistive access even while display transitions finish. */
+dialog:not([open]) {
+  visibility: hidden;
+}
 dialog:not([open])::backdrop {
   pointer-events: none;
 }

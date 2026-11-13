@@ -276,12 +276,16 @@ async function audit(page: Page, name: string): Promise<void> {
   await test.info().attach(name, { path, contentType: 'image/png' })
 }
 async function narrow(application: ElectronApplication, page: Page): Promise<void> {
-  await application.evaluate(({ BrowserWindow }) => {
+  await application.evaluate(async ({ BrowserWindow }) => {
     const view = BrowserWindow.getAllWindows().find((window) =>
       window.webContents.getURL().includes('/print/index.html'),
     )
     if (!view) throw new Error('Missing presentation window')
-    view.setFullScreen(false)
+    if (view.isFullScreen()) {
+      const left = new Promise<void>((resolve) => view.once('leave-full-screen', () => resolve()))
+      view.setFullScreen(false)
+      await left
+    }
     view.setContentSize(420, 900)
   })
   await expect.poll(() => page.evaluate(() => innerWidth)).toBe(420)

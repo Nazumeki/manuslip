@@ -39,6 +39,7 @@ export function ReadingPreview({
       const active = window.document.activeElement
       if (
         origin?.isConnected &&
+        active !== origin &&
         active !== window.document.body &&
         !active?.closest('dialog:not([open])')
       )
