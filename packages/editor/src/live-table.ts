@@ -507,6 +507,8 @@ export class LiveTable {
   }
 
   private finish(backward = false): void {
+    const scroll = this.content.querySelector('.render-table-scroll')
+    const left = scroll?.scrollLeft ?? 0
     const editing = editingBlock(this.view.state)
     const edge = backward ? (editing?.from ?? this.block.from) : (editing?.to ?? this.block.to)
     // A replacement block has no native text caret. Use its neighboring line,
@@ -517,6 +519,7 @@ export class LiveTable {
       selection: EditorSelection.create([EditorSelection.cursor(at, backward ? -1 : 1)]),
     })
     this.view.focus()
+    if (scroll) scroll.scrollLeft = left
   }
 
   private destroy(): void {

@@ -70,6 +70,11 @@ export function PreferencesPanel({
     return normalizedQuery.split(/\s+/).every((word) => text.includes(word))
   })
   const navigate = (page: PreferencesPage, fromSearch = false): void => {
+    if (page === preferencePage && !query) {
+      document.querySelector('.preferences-content')?.scrollTo(0, 0)
+      if (page === 'translation') translationSettings.current?.reveal('provider')
+      return
+    }
     navigation.current = { page, fromSearch }
     setQuery('')
     setPreferencePage(page)

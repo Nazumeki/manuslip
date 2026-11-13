@@ -74,6 +74,7 @@ test('document tabs keep close actions outside the tab list and preserve keyboar
     await expect(secondTab).toBeFocused()
 
     const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
+    await expect(secondTab).toHaveAttribute('aria-selected', 'true')
     await editor.fill('# 第二个文档\n\nEdited text stays in this tab.\n')
     const preferences = page.getByRole('button', { name: 'Preferences', exact: true })
     await preferences.focus()

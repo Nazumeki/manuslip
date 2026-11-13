@@ -36,6 +36,8 @@ export function ReadingPreview({
   const configure: ConfigureTranslation = (target = 'provider') => {
     const origin = window.document.activeElement
     showSettings(target, () => {
+      // Without a usable configuration, keep the native return to the settings invoker.
+      if (!reading.store.getState().configuration?.settings) return
       const active = window.document.activeElement
       if (
         origin?.isConnected &&

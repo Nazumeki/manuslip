@@ -376,6 +376,7 @@ test('translation preferences support keyboard setup, session keys, cache confir
       await page.getByRole('button', { name: 'General', exact: true }).click()
       await page.locator('#theme').selectOption(theme)
       await page.getByRole('button', { name: 'Translation', exact: true }).click()
+      await page.getByRole('button', { name: 'Translation', exact: true }).click()
       await panel.getByLabel('Full chat endpoint', { exact: true }).focus()
       await page.evaluate(
         () =>

@@ -358,7 +358,9 @@ test('appearance first-save and Save As keep local styles, while failed storage 
     await dialog.getByRole('button', { name: 'Retry save', exact: true }).click()
     await expect(dialog.getByRole('alert')).toHaveCount(0)
     await dialog.getByRole('button', { name: 'Close', exact: true }).click()
-    expect(Object.keys(JSON.parse(await readFile(storePath, 'utf8')).entries)).toHaveLength(1)
+    await expect
+      .poll(async () => Object.keys(JSON.parse(await readFile(storePath, 'utf8')).entries))
+      .toHaveLength(1)
   } finally {
     await stop(application)
     await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })

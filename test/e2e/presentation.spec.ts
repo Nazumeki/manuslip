@@ -141,7 +141,13 @@ test('reading presentations and images retain each bilingual layout without new 
       expect(await readFile(path, 'utf8')).toBe(original)
     }
     await page.getByRole('button', { name: 'Source', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Source', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     const editor = page.locator('.cm-content')
+    await expect(editor).toBeVisible()
+    await expect(editor).toBeFocused()
     await editor.press(`${modifier}+End`)
     await editor.press('Enter')
     await editor.type('Later source')

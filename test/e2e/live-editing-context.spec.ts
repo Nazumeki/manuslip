@@ -61,7 +61,11 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           await expect(page.locator('.preferences-dialog')).not.toBeVisible()
         }
         const scroller = page.locator('.cm-scroller')
-        await scroller.evaluate((element) => {
+        await expect(page.locator('.preview-toolbar [role="status"]')).toHaveCount(0)
+        await scroller.evaluate(async (element) => {
+          // CodeMirror measures the collapsed blocks after the conventions update commits.
+          await new Promise(requestAnimationFrame)
+          await new Promise(requestAnimationFrame)
           element.scrollTop = (element.scrollHeight - element.clientHeight) / 2
         })
         const rendered = page.locator(`.cm-live-${kind}:not(.cm-live-edit-preview)`)
@@ -188,6 +192,7 @@ for (const kind of ['html', 'math', 'diagram'] as const) {
           await expect(panel).toBeVisible()
           if (size === 'tall') {
             await expect(preview.locator('svg')).toBeVisible()
+            if (kind === 'diagram') await expect(preview.locator('svg')).toContainText('QSame')
             expect(
               await panel.evaluate((element) => element.scrollHeight > element.clientHeight),
             ).toBe(true)

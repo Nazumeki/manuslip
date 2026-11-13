@@ -138,7 +138,8 @@ for (const theme of ['light', 'dark'])
           }
         })
         // macOS constrains native height to the display's work area.
-        expect(capture.size.width).toBeGreaterThanOrEqual(capture.contentSize[0] ?? 0)
+        expect(capture.size.width).toBeGreaterThanOrEqual(config.width * config.zoom)
+        expect(capture.contentSize[1]).toBeGreaterThan(0)
         expect(capture.size.height).toBeGreaterThanOrEqual(capture.contentSize[1] ?? 0)
         expect(capture.zoom).toBe(config.zoom)
         observations.push({ config, closeNames, measured, capture: { size: capture.size } })
