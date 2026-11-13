@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { arch, platform, release } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -201,7 +201,12 @@ try {
     ) {
       assert.equal(dirname(uninstaller), installed)
       assert.ok((await realpath(uninstaller)).startsWith(`${await realpath(directory)}${sep}`))
-      await run(uninstaller, ['/S', '/currentuser'])
+      // NSIS normally spawns a temporary copy and exits before cleanup finishes.
+      // Run our own copy outside the installation with _?= last and unquoted, so
+      // the awaited process performs the whole uninstall and can remove its files.
+      const runner = join(directory, 'run-uninstaller.exe')
+      await copyFile(uninstaller, runner)
+      await run(runner, ['/S', '/currentuser', `_?=${installed}`], true)
       const deadline = Date.now() + 30000
       while (
         await stat(installed).then(

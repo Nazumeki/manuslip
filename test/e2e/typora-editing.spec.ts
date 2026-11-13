@@ -118,12 +118,11 @@ for (const mode of ['Source', 'Live Preview']) {
         'true',
       )
       const editor = page.getByRole('textbox', { name: 'Markdown source', exact: true })
-      await editor.press(`${modifier}+End`)
-      // Enter the fenced range instead of leaving the caret on its outside boundary.
-      await editor.press('ArrowLeft')
-      await expect(editor.locator('.cm-line').filter({ hasText: '>   alpha' })).toBeVisible()
-      await page.keyboard.press('ArrowUp')
-      await page.keyboard.press('End')
+      if (mode === 'Live Preview') await editor.locator('pre > code').click()
+      const line = editor.locator('.cm-line').filter({ hasText: '>   alpha' })
+      await expect(line).toBeVisible()
+      await line.click()
+      await editor.press('End')
       await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Alt+c' : 'Control+Shift+k')
       await saved(page, path, '> - alpha')
       await page.keyboard.type(' beta')
