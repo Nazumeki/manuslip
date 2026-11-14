@@ -36,6 +36,15 @@ export async function launchDesktop(
   try {
     const page = await application.firstWindow()
     await page.waitForLoadState('domcontentloaded')
+    if (process.env.MANUSLIP_PACKAGED_EXECUTABLE) {
+      const runtime = await application.evaluate(({ app }) => ({
+        packaged: app.isPackaged,
+        path: app.getAppPath(),
+      }))
+      expect(runtime.packaged, 'Packaged tests must launch the built application').toBe(true)
+      expect(runtime.path).toMatch(/[/\\]app\.asar$/)
+      await expect(page).toHaveURL(/^manuslip-app:/)
+    }
     await application.evaluate(({ app, BrowserWindow }) => {
       const window = BrowserWindow.getAllWindows()[0]
       if (!window) throw new Error('Missing application window')

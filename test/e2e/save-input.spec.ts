@@ -41,6 +41,28 @@ async function withPendingInput(
         true,
       )
       const frames: FrameRequestCallback[] = []
+      const timers = new Map<number, () => void>()
+      const nativeTimeout = window.setTimeout.bind(window)
+      const nativeClearTimeout = window.clearTimeout.bind(window)
+      // A delayed native blur/focus task can otherwise drain the held mutation
+      // before the command under test. Manual takeRecords remains available.
+      Reflect.set(
+        window,
+        'setTimeout',
+        (handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+          if (typeof handler !== 'function') return nativeTimeout(handler, timeout, ...args)
+          const run = () => handler(...args)
+          const id = nativeTimeout(() => {
+            if (holding) timers.set(id, run)
+            else run()
+          }, timeout)
+          return id
+        },
+      )
+      Reflect.set(window, 'clearTimeout', (id?: number) => {
+        if (id !== undefined) timers.delete(id)
+        nativeClearTimeout(id)
+      })
       const nativeFrame = window.requestAnimationFrame.bind(window)
       window.requestAnimationFrame = (callback) =>
         nativeFrame((time) => {
@@ -81,6 +103,8 @@ async function withPendingInput(
       Reflect.set(window, '__saveInputStats', () => ({ heldRecords, taken, heldFrames }))
       Reflect.set(window, '__saveInputRelease', () => {
         holding = false
+        for (const callback of timers.values()) nativeTimeout(callback)
+        timers.clear()
         for (const callback of frames.splice(0)) nativeFrame(callback)
       })
     })

@@ -1,8 +1,38 @@
 import { describe, expect, it } from 'vitest'
 import { diagramLimits, diagramSyntax } from '../../src/diagram'
-import { legacyDiagramToMermaid, restoreLegacyLabelText } from '../../src/legacy-diagram'
+import {
+  legacyDiagramToMermaid,
+  restoreLegacyLabelFragments,
+  restoreLegacyLabelText,
+} from '../../src/legacy-diagram'
 
 describe('bounded legacy diagram compatibility', () => {
+  it('restores generated escapes across every possible text span boundary', () => {
+    const encoded = '&#34;&#60;script&#62;&#34; &#38; &#35;35&#59; &#92; &#37; &#96;'
+    const expected = restoreLegacyLabelText(encoded)
+    for (let split = 0; split <= encoded.length; split++) {
+      const fragments = [encoded.slice(0, split), '', encoded.slice(split)]
+      const restored = restoreLegacyLabelFragments(fragments)
+      expect(restored).toHaveLength(fragments.length)
+      expect(restored[1]).toBe('')
+      expect(restored.join('')).toBe(expected)
+    }
+  })
+  it('preserves wrapped label spans and literal entities without decoding a second time', () => {
+    expect(
+      restoreLegacyLabelFragments([
+        'Review',
+        '&#34;&#60;dr',
+        'aft&#62;&#34',
+        ';',
+        ' &#38;',
+        ' keep',
+        '&#35;35&#59',
+        ';',
+        ' &lt; &#39; &#9999;',
+      ]),
+    ).toEqual(['Review', '"<dr', 'aft>"', '', ' &', ' keep', '#35;', '', ' &lt; &#39; &#9999;'])
+  })
   it('restores only generated flow-label entities once as inert text', () => {
     expect(
       restoreLegacyLabelText('&#34;&#60;script&#62;&#34; &#38; &#35;35&#59; &#92; &#37; &#96;'),

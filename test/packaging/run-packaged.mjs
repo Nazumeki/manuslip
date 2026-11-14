@@ -18,7 +18,7 @@ try {
   const cli = fileURLToPath(new URL('../../node_modules/@playwright/test/cli.js', import.meta.url))
   const result = spawnSync(
     process.execPath,
-    [cli, 'test', '--config', 'test/e2e/playwright.config.ts', ...process.argv.slice(2)],
+    [cli, 'test', '--config', 'test/e2e/playwright.packaged.config.ts', ...process.argv.slice(2)],
     {
       cwd: fileURLToPath(new URL('../..', import.meta.url)),
       stdio: 'inherit',

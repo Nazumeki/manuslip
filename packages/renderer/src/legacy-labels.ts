@@ -26,6 +26,40 @@ export function restoreLegacyLabelText(value: string): string {
   )
 }
 
+/** A wrapped SVG label can split one escape across several text spans. Keep its
+ * spans and decode each generated entity once, including across empty spans.
+ */
+export function restoreLegacyLabelFragments(fragments: readonly string[]): string[] {
+  const text = fragments.join('')
+  const output = fragments.map(() => '')
+  let position = 0,
+    fragment = 0,
+    offset = 0
+  const consume = (to: number, replacement?: string): void => {
+    while (position < to) {
+      const value = fragments[fragment] ?? ''
+      const count = Math.min(to - position, value.length - offset)
+      if (count) {
+        output[fragment] +=
+          replacement === undefined ? value.slice(offset, offset + count) : replacement
+        if (replacement !== undefined) replacement = ''
+      }
+      position += count
+      offset += count
+      if (offset === value.length) {
+        fragment++
+        offset = 0
+      }
+    }
+  }
+  for (const match of text.matchAll(/&#(34|35|37|38|59|60|62|92|96);/g)) {
+    consume(match.index)
+    consume(match.index + match[0].length, String.fromCharCode(Number(match[1])))
+  }
+  consume(text.length)
+  return output
+}
+
 export function legacyActor(value: string): string {
   let name = value.trim()
   const quoted = name.startsWith('"') && name.endsWith('"')

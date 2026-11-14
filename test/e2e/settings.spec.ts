@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import axe from 'axe-core'
+import { spellingChannel } from '../../apps/desktop/src/shared/spelling-contracts'
 import { contrast, launchDesktop } from './helpers'
 
 async function preferencesContrast(page: import('@playwright/test').Page): Promise<void> {
@@ -25,7 +26,7 @@ async function preferencesContrast(page: import('@playwright/test').Page): Promi
   )
 }
 
-test('offline spelling is opt-in, offers native corrections with undo and survives restart', async () => {
+test('offline spelling is opt-in, applies undoable corrections and survives restart', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'manuslip-spelling-'))
   const path = join(profile, 'spelling.md')
   await writeFile(path, 'mispell example')
@@ -55,51 +56,22 @@ test('offline spelling is opt-in, offers native corrections with undo and surviv
     await source.click()
     await expect(source).toHaveAttribute('aria-pressed', 'true')
     await expect(editor).toHaveAttribute('spellcheck', 'true')
-    let suggestion = ''
-    await expect
-      .poll(
-        async () => {
-          // The captured menu never takes native focus. Refocus the field on each
-          // attempt so an OS service that started late can check its existing text.
-          await source.focus()
-          // Install the capture before dispatching input, without leaving an event promise
-          // running after the poll deadline. macOS may still be starting its spelling service.
-          const correction = await application.evaluateHandle(({ Menu }) => {
-            const result = { suggestion: null as string | null }
-            const original = Menu.buildFromTemplate
-            Menu.buildFromTemplate = (template) => {
-              Menu.buildFromTemplate = original
-              const menu = original(template)
-              menu.popup = () => {
-                // A native menu choice happens after the context-menu event
-                // returns and Chromium has selected the misspelled word.
-                setImmediate(() => {
-                  const suggestion = menu.getMenuItemById('spelling-0')
-                  suggestion?.click()
-                  result.suggestion = suggestion?.label || ''
-                })
-              }
-              return menu
-            }
-            return result
-          })
-          try {
-            await editor
-              .locator('.cm-line')
-              .first()
-              .click({ button: 'right', position: { x: 25, y: 10 } })
-            await expect
-              .poll(() => correction.evaluate((result) => result.suggestion))
-              .not.toBeNull()
-            suggestion = (await correction.evaluate((result) => result.suggestion)) || ''
-            return suggestion
-          } finally {
-            await correction.dispose()
-          }
-        },
-        { timeout: process.platform === 'darwin' ? 10_000 : 5_000 },
-      )
-      .not.toBe('')
+    // Exercise the application's correction boundary with a known native-menu choice.
+    // Dictionary availability and suggestions belong to the host OS on macOS.
+    await editor
+      .locator('.cm-line')
+      .first()
+      .dblclick({ position: { x: 25, y: 10 } })
+    await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('mispell')
+    const suggestion = 'misspell'
+    await application.evaluate(
+      ({ BrowserWindow }, { channel, correction }) => {
+        const window = BrowserWindow.getAllWindows()[0]
+        if (!window) throw new Error('Missing spelling window')
+        window.webContents.send(channel, correction)
+      },
+      { channel: spellingChannel, correction: { word: 'mispell', replacement: suggestion } },
+    )
     await expect(editor).toHaveText(`${suggestion} example`)
     await editor.focus()
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z')

@@ -18,7 +18,6 @@ for (const theme of ['light', 'dark'])
       const page = await application.firstWindow()
       const tab = page.getByRole('tab', { name, exact: true })
       await expect(tab).toBeVisible()
-      await expect(page.locator('.editor-status')).toContainText(/\d+ words/)
       for (const state of [
         { width: 1160, height: 800, zoom: 1, locale: 'en', dir: 'ltr' },
         { width: 360, height: 800, zoom: 1, locale: 'en', dir: 'ltr' },

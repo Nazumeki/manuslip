@@ -7,7 +7,7 @@ source and builds application assets on Linux x64, Windows x64 and macOS x64/arm
 The manual [Pandoc](../../.github/workflows/pandoc.yml) workflow runs real conversions
 and desktop exports on the same targets. The manual
 [Packaged desktop](../../.github/workflows/packaged.yml) workflow builds unsigned
-installers and runs the full common desktop E2E suite, plus Windows installation and
+installers and runs the application E2E suite against the built package, plus Windows installation and
 uninstallation checks. Select each workflow in GitHub Actions and use **Run workflow**
 on the branch to test. Interactive OS integration and signing require their native
 platform checks.
@@ -49,6 +49,9 @@ Unicode file through the renderer and checks that injected Node environment opti
 are ignored. The subsequent Playwright suite needs Node inspection, so it instruments
 a separate copy in `test/packaging/result/automation-*` and removes it afterwards.
 The installer suite follows the same sequence after comparing installed runtime bytes.
+The packaged config excludes source-built browser fixtures, which run separately in CI.
+Every packaged desktop launch verifies the application is loading from ASAR; it cannot
+silently fall back to the source app.
 Benchmarks also use a temporary instrumentation copy. These copies have modified
 executables and must never be distributed or used to assess production signatures.
 

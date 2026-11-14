@@ -255,6 +255,7 @@ for (const locale of ['en', 'zh-CN'] as const) {
         .fill(`# Unsupported\n\n\`\`\`flowchart\n${unsupported}\n\`\`\`\n\nEnd`)
       await reopened.locator('.cm-content').press(`${modifier}+Home`)
       await reopened.getByRole('button', { name: names.live, exact: true }).click()
+      await expect(reopened.locator('.cm-live-diagram')).toHaveCount(1)
       await expect(reopened.locator('.cm-live-diagram pre')).toHaveText(unsupported)
       await expect(reopened.locator('.cm-live-diagram [role="status"]')).toHaveText(
         names.unsupported,
