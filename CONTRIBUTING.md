@@ -36,10 +36,10 @@ retried with `npm install`; unknown dependency contents require reviewing the pa
 | `npm run test:pandoc:e2e` | Real Pandoc desktop exports against existing assets |
 | `npm run test:packaging` | Dependency installation, release and platform launcher checks |
 | `npm run build:app` | Build application assets for Electron E2E |
-| `npm run test:e2e` | Run workflows against existing assets |
-| `npm run test:e2e:fixtures` | Run source-built browser fixtures without packaging |
+| `npm run test:e2e` | Run desktop E2E tests against existing assets |
+| `npm run test:e2e:fixtures` | Run renderer integration tests in dedicated Electron test apps |
 | `npm run build` | Build assets and unsigned native installers |
-| `npm run test:packaged` | Run workflows against the unpacked application |
+| `npm run test:packaged` | Run packaged app tests against the unpacked application |
 | `npm run test:performance` | Run hardware-dependent packaged performance gates |
 | `npm run test:performance:main` | Run search/workspace source performance gates without packaging |
 | `npm run clean` | Remove build output and generated test results |
@@ -94,10 +94,11 @@ and `revert`; use `!` and explain breaking changes when applicable.
 Sign off commits with `git commit -s` under the Developer Certificate of Origin. Describe
 the resulting behavior and relevant verification in the PR. Run `npm run check` and the
 affected tests; CI runs source, unit/integration/packaging checks and builds application
-assets on Linux x64, Windows x64 and macOS x64/arm64. The manual Pandoc and Packaged
-desktop workflows run real Pandoc conversions/exports and packaged desktop/Windows
-installer checks on the same targets. Source-built browser fixtures run in their own
-CI jobs. Dependency security runs separately on Linux and also runs daily.
-Run the manual workflows before release; see
+assets on Linux x64, Windows x64 and macOS x64/arm64. The manual
+[Integration tests](.github/workflows/integration.yml) workflow runs real Pandoc
+conversions/exports and packaged app/Windows installer checks in independent jobs on
+the same targets. Renderer integration tests run in their own CI jobs. Dependency
+security runs separately on Linux and also runs daily.
+Run Integration tests before release; see
 [testing](docs/testing/testing.md).
 A maintainer review is required before merge. Contributions use the [MIT license](LICENSE).

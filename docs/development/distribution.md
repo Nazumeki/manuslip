@@ -4,13 +4,13 @@ Ordinary builds produce unsigned native installers without selecting an update f
 or publishing. Targets are Windows x64 NSIS, Linux x64 AppImage and macOS x64/arm64 DMG.
 Build and test on the target platform and architecture before release. Routine CI checks
 source and builds application assets on Linux x64, Windows x64 and macOS x64/arm64.
-The manual [Pandoc](../../.github/workflows/pandoc.yml) workflow runs real conversions
-and desktop exports on the same targets. The manual
-[Packaged desktop](../../.github/workflows/packaged.yml) workflow builds unsigned
-installers and runs the application E2E suite against the built package, plus Windows installation and
-uninstallation checks. Select each workflow in GitHub Actions and use **Run workflow**
-on the branch to test. Interactive OS integration and signing require their native
-platform checks.
+The manual [Integration tests](../../.github/workflows/integration.yml) workflow runs
+**Pandoc integration tests** and **Packaged app tests** as independent jobs on the same targets.
+The Pandoc job runs real conversions and desktop exports. The packaged app job builds
+unsigned installers and runs the application E2E suite against the built package, plus
+Windows installation and uninstallation checks.
+Select **Integration tests** in GitHub Actions and use **Run workflow** on the branch to
+test. Interactive OS integration and signing require their native platform checks.
 
 All packages disable Node launch mode, `NODE_OPTIONS`, Node CLI inspection and extra
 `file://` privileges, and require loading from ASAR. Windows/macOS validate embedded
@@ -49,7 +49,7 @@ Unicode file through the renderer and checks that injected Node environment opti
 are ignored. The subsequent Playwright suite needs Node inspection, so it instruments
 a separate copy in `test/packaging/result/automation-*` and removes it afterwards.
 The installer suite follows the same sequence after comparing installed runtime bytes.
-The packaged config excludes source-built browser fixtures, which run separately in CI.
+The packaged config excludes renderer integration tests, which run separately in CI.
 Every packaged desktop launch verifies the application is loading from ASAR; it cannot
 silently fall back to the source app.
 Benchmarks also use a temporary instrumentation copy. These copies have modified
@@ -138,14 +138,14 @@ dispatched with an existing tag. For manual runs, select that same tag under **U
 workflow from**, so GitHub's provenance identity binds to the release tag. The tag
 must be a semantic version matching the root,
 desktop and every workspace package, and its commit must belong to `origin/main`.
-It checks out the validated commit for all jobs, reuses CI for dependency and source
-verification, then builds unsigned installers on Windows x64, Linux x64 and macOS
+It checks out the validated commit for all jobs and builds unsigned installers on
+Windows x64, Linux x64 and macOS
 x64/arm64. Signing certificates and Apple notarization credentials are not required.
 These installers can show Windows SmartScreen or macOS Gatekeeper prompts or be
 blocked by operating-system policy. Checksums and GitHub build attestations verify
 artifact integrity and provenance; they do not provide native publisher trust.
-Run the manual Pandoc and Packaged desktop workflows separately before release;
-the release workflow does not invoke them. Release candidates undergo binary
+Run the manual Integration tests workflow before release;
+the release workflow does not invoke it. Release candidates undergo binary
 hardening verification and packaged security smoke tests before attestation.
 
 The publishing job uses the `release` GitHub environment. Required reviewers and

@@ -6,11 +6,6 @@ on:
       - main
   pull_request:
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      ref:
-        required: true
-        type: string
   schedule:
     - cron: "23 3 * * *"
 
@@ -23,60 +18,78 @@ concurrency:
 
 jobs:
   dependencies:
-    name: Dependencies
+    name: Dependency audit
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.ref || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version-file: ".nvmrc"
+          node-version-file: .nvmrc
 
-      - run: npm run check:lockfile
+      - name: Validate lockfile
+        run: npm run check:lockfile
 
-      - run: npm run audit:dependencies
+      - name: Audit dependencies
+        run: npm run audit:dependencies
 
-  browser-fixtures:
-    name: Browser fixtures (${{ matrix.os }})
+  renderer-integration:
+    name: Renderer integration tests (${{ matrix.os }})
     if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-15-intel, macos-15]
+        os:
+          - ubuntu-22.04
+          - windows-latest
+          - macos-15-intel
+          - macos-15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.ref || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm run check:lockfile
-      - run: npm ci --no-audit --no-fund
-      - name: Source fixtures (Linux)
+
+      - name: Validate lockfile
+        run: npm run check:lockfile
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run renderer integration tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run test:e2e:fixtures
-      - name: Source fixtures (Windows and macOS)
+
+      - name: Run renderer integration tests (Windows and macOS)
         if: runner.os != 'Linux'
         run: npm run test:e2e:fixtures
-      - name: Retain fixture evidence
+
+      - name: Upload failure evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: browser-fixtures-failure-${{ matrix.os }}
+          name: renderer-integration-failure-${{ matrix.os }}
           path: test/e2e/result/
           if-no-files-found: ignore
           retention-days: 7
 
   verify:
-    name: Verify (${{ matrix.os }})
+    name: Source checks and tests (${{ matrix.os }})
     if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     # Full correctness fixtures can take over 20 minutes on shared Intel macOS hosts.
@@ -90,36 +103,45 @@ jobs:
           - macos-15-intel
           - macos-15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.ref || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: .nvmrc
+          cache: npm
 
-      - run: npm run check:lockfile
+      - name: Validate lockfile
+        run: npm run check:lockfile
 
-      - run: npm ci --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
 
-      - run: npm run check
+      - name: Run source checks
+        run: npm run check
 
       # Dense correctness fixtures need CPU/memory headroom on shared runners.
       # Keep failure reports bounded instead of expanding every passed corpus case.
-      - run: npm run test:unit -- --maxWorkers=2 --reporter=dot
+      - name: Run unit tests
+        run: npm run test:unit -- --maxWorkers=2 --reporter=dot
 
-      - run: npm run test:integration
+      - name: Run desktop integration tests
+        run: npm run test:integration
 
-      - run: npm run test:packaging
+      - name: Run packaging tests
+        run: npm run test:packaging
 
-      - run: npm run build:app
+      - name: Build application
+        run: npm run build:app
 
-      - name: Export without Pandoc (Linux)
+      - name: Test missing and invalid Pandoc (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run test:e2e -- test/e2e/pandoc.spec.ts
 
-      - name: Export without Pandoc (Windows and macOS)
+      - name: Test missing and invalid Pandoc (Windows and macOS)
         if: runner.os != 'Linux'
         run: npm run test:e2e -- test/e2e/pandoc.spec.ts

@@ -1,0 +1,149 @@
+name: Integration Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pandoc:
+    name: Pandoc integration tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - windows-latest
+          - macos-15-intel
+          - macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Validate lockfile
+        run: npm run check:lockfile
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Set up Pandoc
+        uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          pandoc-version: "3.13"
+
+      - name: Select and verify Pandoc executable
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { appendFileSync, realpathSync } from 'node:fs'
+          const finder = process.platform === 'win32' ? 'where.exe' : 'which'
+          const selected = execFileSync(finder, ['pandoc'], { encoding: 'utf8' }).trim().split(/\r?\n/)[0]
+          const path = realpathSync(selected)
+          const version = execFileSync(path, ['--version'], { encoding: 'utf8' })
+          if (!/^pandoc 3\.13\r?\n/.test(version)) throw new Error('Expected Pandoc 3.13')
+          appendFileSync(process.env.GITHUB_ENV, `MANUSLIP_TEST_PANDOC=${path}\n`)
+          console.log(version.trim())
+          NODE
+
+      - name: Run Pandoc conversion tests
+        run: npm run test:pandoc
+
+      - name: Build application
+        run: npm run build:app
+
+      - name: Run Pandoc export tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:pandoc:e2e
+
+      - name: Run Pandoc export tests (Windows and macOS)
+        if: runner.os != 'Linux'
+        run: npm run test:pandoc:e2e
+
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: pandoc-failure-${{ matrix.os }}
+          path: test/e2e/result/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  packaged:
+    name: Packaged app tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - windows-latest
+          - macos-15-intel
+          - macos-15
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Validate lockfile
+        run: npm run check:lockfile
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build unsigned installers
+        run: npm run build
+
+      - name: Verify package hardening
+        run: npm run verify:package
+
+      - name: Run packaged app tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:packaged
+
+      - name: Run packaged app tests (Windows and macOS)
+        if: runner.os != 'Linux'
+        run: npm run test:packaged
+
+      - name: Test Windows installation and uninstallation
+        if: runner.os == 'Windows'
+        run: npm run test:installer
+
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: packaged-failure-${{ matrix.os }}
+          path: |
+            test/e2e/result/
+            test/packaging/result/windows-installer-*/report.json
+            test/packaging/result/windows-installer-*/*.png
+          if-no-files-found: ignore
+          retention-days: 7
